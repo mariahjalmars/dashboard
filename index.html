@@ -239,6 +239,28 @@ body {
 .tide-label.low { background: #e8f5e9; color: #2e7d32; }
 svg.tide-svg { width: 100%; height: 130px; display: block; }
 
+/* ── FILTER BUTTONS ─────────────────────────── */
+.li {
+  cursor: pointer;
+  border-radius: 20px;
+  padding: 3px 9px;
+  transition: background .15s, font-weight .1s;
+  user-select: none;
+}
+.li:hover { background: #f0f0f0; }
+.li.active {
+  font-weight: 700;
+  color: #111;
+  background: #e8eaf0;
+  outline: 2px solid #ccc;
+}
+.li-all {
+  font-size: 11.5px; color: #666; cursor: pointer;
+  padding: 3px 9px; border-radius: 20px;
+  border: 1px solid #ddd; transition: background .15s;
+}
+.li-all:hover, .li-all.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+
 /* ── MONTH CALENDAR ─────────────────────────── */
 .month-block { margin-bottom: 32px; }
 .month-block:last-child { margin-bottom: 0; }
@@ -329,13 +351,14 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
 
 <!-- LEGEND -->
 <div class="legend-bar">
-  <div class="li"><div class="dot" style="background:var(--personal)"></div>María</div>
-  <div class="li"><div class="dot" style="background:var(--imark)"></div>Ímark</div>
-  <div class="li"><div class="dot" style="background:var(--hjalmar)"></div>Hjálmar</div>
-  <div class="li"><div class="dot" style="background:var(--elly)"></div>Elly</div>
-  <div class="li"><div class="dot" style="background:var(--family)"></div>Fjölskylda</div>
-  <div class="li"><div class="dot" style="background:var(--school)"></div>Hagaskóli</div>
-  <div class="li"><div class="dot" style="background:var(--holiday)"></div>Frídagar</div>
+  <span class="li-all active" id="filter-all" onclick="setFilter(null)">Allir</span>
+  <div class="li" id="filter-maria"   onclick="setFilter('maria')">  <div class="dot" style="background:var(--personal)"></div>María</div>
+  <div class="li" id="filter-hjalmar" onclick="setFilter('hjalmar')"><div class="dot" style="background:var(--hjalmar)"></div>Hjálmar</div>
+  <div class="li" id="filter-elly"    onclick="setFilter('elly')">   <div class="dot" style="background:var(--elly)"></div>Elly</div>
+  <div class="li" id="filter-family"  onclick="setFilter('family')"> <div class="dot" style="background:var(--family)"></div>Fjölskylda</div>
+  <div class="li" style="cursor:default"><div class="dot" style="background:var(--school)"></div>Hagaskóli</div>
+  <div class="li" style="cursor:default"><div class="dot" style="background:var(--holiday)"></div>Frídagar</div>
+  <div class="li" style="cursor:default"><div class="dot" style="background:var(--imark)"></div>Ímark</div>
 </div>
 
 <!-- MAIN -->
@@ -464,6 +487,13 @@ const EVENTS = [
   { date:'2026-04-27', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
 ];
 
+// ─── TRAVEL RANGES (expanded at init) ────────────────────────────────────────
+
+const TRIPS = [
+  { from: '2026-04-30', to: '2026-05-04', title: '✈️ Cannes',  cal: 'personal' },
+  { from: '2026-05-27', to: '2026-06-08', title: '✈️ Ítalía',  cal: 'family'   },
+];
+
 // ─── ICELANDIC STRINGS ────────────────────────────────────────────────────────
 
 const DAYS_L = ['Sunnudagur','Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur','Laugardagur'];
@@ -527,6 +557,37 @@ function evtRow(e, showLoc=true) {
       <div class="evt-sub">${sub}</div>
     </div>
   </div>`;
+}
+
+// ─── PERSON FILTER ───────────────────────────────────────────────────────────
+
+let activeFilter = null;
+
+const PERSON_FILTERS = {
+  maria:   ['personal', 'imark',   'family', 'holiday', 'school'],
+  hjalmar: ['hjalmar',             'family', 'holiday', 'school'],
+  elly:    ['elly',                'family', 'holiday', 'school'],
+  family:  [           'family',            'holiday', 'school'],
+};
+
+function filterEvts(evts) {
+  if (!activeFilter) return evts;
+  const allowed = PERSON_FILTERS[activeFilter];
+  // Always include travel events (personal=María travel, family=family travel)
+  return evts.filter(e => allowed.includes(e.cal) ||
+    (e.title && e.title.startsWith('✈️')));
+}
+
+function setFilter(key) {
+  activeFilter = key;
+  // Update button states
+  document.querySelectorAll('.li[id^="filter-"]').forEach(el => el.classList.remove('active'));
+  document.getElementById('filter-all').classList.toggle('active', !key);
+  if (key) document.getElementById(`filter-${key}`)?.classList.add('active');
+  // Re-render
+  renderToday();
+  renderWeek();
+  renderMonthCal();
 }
 
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
@@ -777,7 +838,7 @@ function renderTide() {
 
 function renderToday() {
   const today = todayStr();
-  const evts = sortEvt(EVENTS.filter(e => e.date === today));
+  const evts = sortEvt(filterEvts(EVENTS.filter(e => e.date === today)));
   const el = document.getElementById('today-events');
   el.innerHTML = evts.length
     ? evts.map(e => evtRow(e)).join('')
@@ -792,7 +853,7 @@ function renderWeek() {
   el.innerHTML = getWeekDates().map(ds => {
     const d = dateObj(ds);
     const isT = ds === today;
-    const evts = sortEvt(EVENTS.filter(e => e.date === ds));
+    const evts = sortEvt(filterEvts(EVENTS.filter(e => e.date === ds)));
     const shown = evts.slice(0, 4);
     const more  = evts.length > 4 ? evts.length - 4 : 0;
     return `<div class="wday${isT?' today':''}">
@@ -848,7 +909,7 @@ function renderMonthCal() {
         }
 
         const ds = `${year}-${p2(month+1)}-${p2(dayNum)}`;
-        const evts = sortEvt(EVENTS.filter(e => e.date === ds));
+        const evts = sortEvt(filterEvts(EVENTS.filter(e => e.date === ds)));
         const isToday    = ds === today;
         const hasHoliday = evts.some(e => e.cal === 'holiday');
         const hasSchool  = evts.some(e => e.cal === 'school');
@@ -887,6 +948,16 @@ function renderMonthCal() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+
+// Expand travel ranges into daily events
+TRIPS.forEach(t => {
+  let d = new Date(t.from + 'T00:00:00');
+  const end = new Date(t.to + 'T00:00:00');
+  while (d <= end) {
+    EVENTS.push({ date: `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`, title: t.title, allDay: true, cal: t.cal });
+    d.setDate(d.getDate() + 1);
+  }
+});
 
 tickClock();
 setInterval(tickClock, 1000);
