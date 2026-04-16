@@ -1,229 +1,174 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/index.html b/index.html
-index a59c59e4b26435183f527042a762df3ed026f76f..9d3a34320e11e2c42d828b7b923baa57de1563b3 100644
---- a/index.html
-+++ b/index.html
-@@ -1,53 +1,174 @@
- <!DOCTYPE html>
- <html lang="en">
- <head>
--    <meta charset="UTF-8">
--    <meta name="viewport" content="width=device-width, initial-scale=1.0">
--    <title>Mobile Dashboard</title>
--    <style>
--        * { margin: 0; padding: 0; box-sizing: border-box; }
--        body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }
--        .topbar { background: #333; color: white; padding: 15px; text-align: center; font-size: 1.2em; }
--        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
--        .card { background: white; margin: 15px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
--        .card h2 { margin-bottom: 10px; color: #333; }
--        .card p { margin: 10px 0; color: #666; }
--        @media (max-width: 768px) { .topbar { font-size: 1em; } .card { padding: 15px; } }
--    </style>
-+  <meta charset="UTF-8" />
-+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-+  <title>Dashboard</title>
-+  <style>
-+    :root {
-+      --bg: #f3f5f7;
-+      --card-bg: #ffffff;
-+      --text: #1f2937;
-+      --muted: #6b7280;
-+      --topbar: #111827;
-+      --topbar-text: #f9fafb;
-+      --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-+      --radius: 12px;
-+    }
-+
-+    * {
-+      margin: 0;
-+      padding: 0;
-+      box-sizing: border-box;
-+    }
-+
-+    body {
-+      font-family: Arial, sans-serif;
-+      background: var(--bg);
-+      color: var(--text);
-+      font-size: 16px;
-+      line-height: 1.4;
-+    }
-+
-+    .topbar {
-+      background: var(--topbar);
-+      color: var(--topbar-text);
-+      padding: 16px;
-+      min-height: 60px;
-+      display: flex;
-+      align-items: center;
-+      justify-content: space-between;
-+      gap: 12px;
-+      flex-wrap: wrap;
-+    }
-+
-+    .topbar h1 {
-+      font-size: 1.25rem;
-+    }
-+
-+    .clock {
-+      font-size: 0.95rem;
-+      opacity: 0.9;
-+      word-break: break-word;
-+    }
-+
-+    main {
-+      max-width: 1200px;
-+      margin: 0 auto;
-+      padding: 16px;
-+    }
-+
-+    .legend {
-+      margin-bottom: 12px;
-+      color: var(--muted);
-+      font-size: 0.95rem;
-+    }
-+
-+    .week-grid {
-+      display: grid;
-+      grid-template-columns: repeat(4, minmax(0, 1fr));
-+      gap: 12px;
-+    }
-+
-+    .card {
-+      background: var(--card-bg);
-+      border-radius: var(--radius);
-+      box-shadow: var(--shadow);
-+      padding: 16px;
-+      min-height: 140px;
-+    }
-+
-+    .card h2 {
-+      margin-bottom: 10px;
-+      font-size: 1.05rem;
-+    }
-+
-+    .card p {
-+      color: var(--muted);
-+      margin: 6px 0;
-+    }
-+
-+    .modal {
-+      width: min(100%, 720px);
-+    }
-+
-+    @media (max-width: 768px) {
-+      .topbar {
-+        padding: 16px;
-+      }
-+
-+      .week-grid {
-+        grid-template-columns: repeat(2, minmax(0, 1fr));
-+      }
-+
-+      main {
-+        padding: 12px;
-+      }
-+    }
-+
-+    @media (max-width: 480px) {
-+      .topbar {
-+        min-height: auto;
-+      }
-+
-+      .topbar h1 {
-+        font-size: 1.1rem;
-+      }
-+
-+      .clock {
-+        font-size: 0.88rem;
-+      }
-+
-+      .week-grid {
-+        grid-template-columns: 1fr;
-+      }
-+
-+      .card {
-+        padding: 14px;
-+      }
-+    }
-+  </style>
- </head>
- <body>
--    <div class="topbar">
--        <h1>Dashboard</h1>
--        <div id="clock"></div>
--    </div>
--    <div class="container">
--        <div class="card">
--            <h2>☀️ Weather</h2>
--            <p>Temperature: 20°C</p>
--            <p>Condition: Sunny</p>
--        </div>
--        <div class="card">
--            <h2>🚗 Traffic</h2>
--            <p>Status: Moderate</p>
--        </div>
--        <div class="card">
--            <h2>📅 Events Today</h2>
--            <p>✓ Meeting at 10 AM</p>
--            <p>✓ Lunch at 12 PM</p>
--        </div>
--        <div class="card">
--            <h2>📊 Week Overview</h2>
--            <p>Mon: Project Deadline</p>
--            <p>Tue: Team Meeting</p>
--            <p>Wed: Webinar</p>
--        </div>
--    </div>
--    <script>
--        function updateClock() {
--            document.getElementById('clock').textContent = new Date().toLocaleString();
--        }
--        setInterval(updateClock, 1000);
--        updateClock();
--    </script>
-+  <header class="topbar">
-+    <h1>Dashboard</h1>
-+    <div id="clock" class="clock" aria-live="polite"></div>
-+  </header>
-+
-+  <main>
-+    <p class="legend">Today's snapshot</p>
-+    <section class="week-grid" aria-label="Dashboard cards">
-+      <article class="card">
-+        <h2>☀️ Weather</h2>
-+        <p>Temperature: 20°C</p>
-+        <p>Condition: Sunny</p>
-+      </article>
-+      <article class="card">
-+        <h2>🚗 Traffic</h2>
-+        <p>Status: Moderate</p>
-+      </article>
-+      <article class="card">
-+        <h2>📅 Events Today</h2>
-+        <p>✓ Meeting at 10 AM</p>
-+        <p>✓ Lunch at 12 PM</p>
-+      </article>
-+      <article class="card">
-+        <h2>📊 Week Overview</h2>
-+        <p>Mon: Project Deadline</p>
-+        <p>Tue: Team Meeting</p>
-+        <p>Wed: Webinar</p>
-+      </article>
-+    </section>
-+  </main>
-+
-+  <script>
-+    function updateClock() {
-+      const clock = document.getElementById('clock');
-+      clock.textContent = new Date().toLocaleString();
-+    }
-+
-+    setInterval(updateClock, 1000);
-+    updateClock();
-+  </script>
- </body>
- </html>
- 
-EOF
-)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <style>
+    :root {
+      --bg: #f3f5f7;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --topbar: #111827;
+      --topbar-text: #f9fafb;
+      --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      --radius: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .topbar {
+      background: var(--topbar);
+      color: var(--topbar-text);
+      padding: 16px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      font-size: 1.25rem;
+    }
+
+    .clock {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      word-break: break-word;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .legend {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      min-height: 140px;
+    }
+
+    .card h2 {
+      margin-bottom: 10px;
+      font-size: 1.05rem;
+    }
+
+    .card p {
+      color: var(--muted);
+      margin: 6px 0;
+    }
+
+    .modal {
+      width: min(100%, 720px);
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        padding: 16px;
+      }
+
+      .week-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      main {
+        padding: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar {
+        min-height: auto;
+      }
+
+      .topbar h1 {
+        font-size: 1.1rem;
+      }
+
+      .clock {
+        font-size: 0.88rem;
+      }
+
+      .week-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Dashboard</h1>
+    <div id="clock" class="clock" aria-live="polite"></div>
+  </header>
+
+  <main>
+    <p class="legend">Today's snapshot</p>
+    <section class="week-grid" aria-label="Dashboard cards">
+      <article class="card">
+        <h2>☀️ Weather</h2>
+        <p>Temperature: 20°C</p>
+        <p>Condition: Sunny</p>
+      </article>
+      <article class="card">
+        <h2>🚗 Traffic</h2>
+        <p>Status: Moderate</p>
+      </article>
+      <article class="card">
+        <h2>📅 Events Today</h2>
+        <p>✓ Meeting at 10 AM</p>
+        <p>✓ Lunch at 12 PM</p>
+      </article>
+      <article class="card">
+        <h2>📊 Week Overview</h2>
+        <p>Mon: Project Deadline</p>
+        <p>Tue: Team Meeting</p>
+        <p>Wed: Webinar</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    function updateClock() {
+      const clock = document.getElementById('clock');
+      clock.textContent = new Date().toLocaleString();
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>
