@@ -433,6 +433,55 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
   .week-grid { grid-template-columns: repeat(7,1fr); }
   .upcol { columns: 1; }
 }
+
+/* ── CHILD MODE ─────────────────────────────── */
+body.child-mode-hjalmar { --accent: #1976d2; }
+body.child-mode-elly    { --accent: #8e24aa; }
+
+.child-topbar-name {
+  font-size: 22px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 10px;
+}
+.child-back {
+  background: rgba(255,255,255,.15);
+  border: none; color: #fff;
+  border-radius: 8px; padding: 6px 14px;
+  font-size: 13px; cursor: pointer;
+  transition: background .15s;
+}
+.child-back:hover { background: rgba(255,255,255,.28); }
+
+.child-panel {
+  display: none;
+  max-width: 1320px; margin: 0 auto; padding: 22px 28px;
+  gap: 18px;
+}
+.child-panel.active { display: grid; }
+
+.child-hero {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+}
+.child-avatar {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--card); border-radius: 14px;
+  padding: 20px 24px; box-shadow: 0 1px 6px rgba(0,0,0,.06);
+  border-left: 5px solid var(--accent, #1976d2);
+}
+.child-avatar-emoji { font-size: 52px; line-height: 1; }
+.child-avatar-info h2 { font-size: 24px; font-weight: 800; color: var(--accent, #1976d2); }
+.child-avatar-info p  { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+.child-today-activities {
+  background: var(--card); border-radius: 14px;
+  padding: 18px 20px; box-shadow: 0 1px 6px rgba(0,0,0,.06);
+}
+.child-tt-wrap {
+  background: var(--card); border-radius: 14px;
+  padding: 18px 20px; box-shadow: 0 1px 6px rgba(0,0,0,.06);
+  overflow-x: auto;
+}
+
+.topbar.child-active { background: var(--accent, var(--dark)); }
 </style>
 </head>
 <body>
@@ -467,11 +516,11 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
 </div>
 
 <!-- LEGEND -->
-<div class="legend-bar">
+<div class="legend-bar" id="legend-bar">
   <span class="li-all active" id="filter-all" onclick="setFilter(null)">Allir</span>
   <div class="li" id="filter-maria"   onclick="setFilter('maria')">  <div class="dot" style="background:var(--personal)"></div>María</div>
-  <div class="li" id="filter-hjalmar" onclick="setFilter('hjalmar')"><div class="dot" style="background:var(--hjalmar)"></div><span onclick="event.stopPropagation();showTT('hjalmar')" title="Sjá stundaskrá" style="border-bottom:1.5px dotted var(--hjalmar);cursor:pointer">Hjálmar</span></div>
-  <div class="li" id="filter-elly"    onclick="setFilter('elly')">   <div class="dot" style="background:var(--elly)"></div><span onclick="event.stopPropagation();showTT('elly')" title="Sjá stundaskrá" style="border-bottom:1.5px dotted var(--elly);cursor:pointer">Elly</span></div>
+  <div class="li" id="filter-hjalmar" onclick="enterChildMode('hjalmar')"><div class="dot" style="background:var(--hjalmar)"></div>Hjálmar</div>
+  <div class="li" id="filter-elly"    onclick="enterChildMode('elly')">   <div class="dot" style="background:var(--elly)"></div>Elly</div>
   <div class="li" id="filter-family"  onclick="setFilter('family')"> <div class="dot" style="background:var(--family)"></div>Fjölskylda</div>
   <div class="li" style="cursor:default"><div class="dot" style="background:var(--school)"></div>Hagaskóli</div>
   <div class="li" style="cursor:default"><div class="dot" style="background:var(--holiday)"></div>Frídagar</div>
@@ -786,6 +835,193 @@ function closeTT() {
   document.getElementById('tt-modal').classList.remove('open');
 }
 
+// ─── CHILD MODE ──────────────────────────────────────────────────────────────
+
+const CHILD_CONFIG = {
+  hjalmar: {
+    color: '#1976d2',
+    colorVar: 'var(--hjalmar)',
+    emoji: '⚽',
+    activities: ['Fótboltaæfing','Markmannsæfing','Styrktaræfing','Helsinki Cup'],
+    statusFn: () => {
+      const now = new Date();
+      const h = now.getHours(), m = now.getMinutes();
+      const todayEvts = EVENTS.filter(e => e.date === todayStr() && e.cal === 'hjalmar' && !e.allDay);
+      const current = todayEvts.find(e => {
+        if (!e.start || !e.end) return false;
+        const [sh,sm] = e.start.split(':').map(Number);
+        const [eh,em] = e.end.split(':').map(Number);
+        const nowMin = h*60+m;
+        return nowMin >= sh*60+sm && nowMin < eh*60+em;
+      });
+      if (current) return `🟢 Núna: ${current.title}`;
+      const next = todayEvts.find(e => {
+        if (!e.start) return false;
+        const [sh,sm] = e.start.split(':').map(Number);
+        return h*60+m < sh*60+sm;
+      });
+      if (next) return `⏳ Næst: ${next.title} kl. ${next.start}`;
+      return '✅ Engir viðburðir eftir í dag';
+    }
+  },
+  elly: {
+    color: '#8e24aa',
+    colorVar: 'var(--elly)',
+    emoji: '🎭',
+    activities: ['Fimleikaaæfing','Dansæfing','Generalprufa','Leiklist'],
+    statusFn: () => {
+      const now = new Date();
+      const h = now.getHours(), m = now.getMinutes();
+      const todayEvts = EVENTS.filter(e => e.date === todayStr() && e.cal === 'elly' && !e.allDay);
+      const current = todayEvts.find(e => {
+        if (!e.start || !e.end) return false;
+        const [sh,sm] = e.start.split(':').map(Number);
+        const [eh,em] = e.end.split(':').map(Number);
+        const nowMin = h*60+m;
+        return nowMin >= sh*60+sm && nowMin < eh*60+em;
+      });
+      if (current) return `🟢 Núna: ${current.title}`;
+      const next = todayEvts.find(e => {
+        if (!e.start) return false;
+        const [sh,sm] = e.start.split(':').map(Number);
+        return h*60+m < sh*60+sm;
+      });
+      if (next) return `⏳ Næst: ${next.title} kl. ${next.start}`;
+      return '✅ Engir viðburðir eftir í dag';
+    }
+  }
+};
+
+let childModeActive = null;
+
+function enterChildMode(key) {
+  const cfg = CHILD_CONFIG[key];
+  if (!cfg) return;
+  childModeActive = key;
+
+  // Hide main content, show child panel
+  document.querySelector('.main').style.display = 'none';
+  document.getElementById('legend-bar').style.display = 'none';
+  document.querySelectorAll('.child-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`child-${key}`).classList.add('active');
+
+  // Restyle topbar
+  document.querySelector('.topbar').style.background = cfg.color;
+
+  // Swap date block for name + back button
+  document.querySelector('.date-block').innerHTML = `
+    <div class="child-topbar-name">
+      <span>${cfg.emoji}</span>
+      <span>${key === 'hjalmar' ? 'Hjálmar' : 'Elly'}</span>
+    </div>`;
+
+  // Add back button in clock area
+  const clockBlock = document.querySelector('.clock-block');
+  if (!document.getElementById('child-back-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'child-back';
+    btn.id = 'child-back-btn';
+    btn.textContent = '← Til baka';
+    btn.onclick = exitChildMode;
+    clockBlock.after(btn);
+  }
+
+  // Populate status
+  document.getElementById(`child-${key}-status`).textContent = cfg.statusFn();
+
+  // Populate today's events
+  renderChildEvents(key);
+
+  // Populate timetable
+  renderChildTimetable(key);
+
+  // Populate weather (reuse loaded data)
+  populateChildWeather(key);
+}
+
+function exitChildMode() {
+  childModeActive = null;
+  document.querySelector('.main').style.display = '';
+  document.getElementById('legend-bar').style.display = '';
+  document.querySelectorAll('.child-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.topbar').style.background = '';
+  document.querySelector('.date-block').innerHTML = `<div id="hdr-date">—</div>`;
+  renderDate();
+  const btn = document.getElementById('child-back-btn');
+  if (btn) btn.remove();
+}
+
+function renderChildEvents(key) {
+  const today = todayStr();
+  const allowed = PERSON_FILTERS[key];
+  const evts = sortEvt(EVENTS.filter(e => e.date === today && allowed.includes(e.cal)));
+  const el = document.getElementById(`child-${key}-events`);
+  el.innerHTML = evts.length
+    ? evts.map(e => evtRow(e)).join('')
+    : '<div class="empty">Engir viðburðir skráðir í dag</div>';
+}
+
+function renderChildTimetable(key) {
+  const tt = TIMETABLES[key];
+  if (!tt) return;
+  const today = new Date();
+  const dowMap = { 1:'mán', 2:'þri', 3:'mið', 4:'fim', 5:'fös' };
+  const todayKey = dowMap[today.getDay()] || '';
+  const dayHeaders = ['mán','þri','mið','fim','fös'];
+  const dayLabels  = ['Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur'];
+  const isElly = key === 'elly';
+
+  const headerCells = dayHeaders.map((d, i) => {
+    const isT = d === todayKey;
+    return `<th class="${isT ? 'today-col' : ''}">${dayLabels[i].slice(0,3)}<br><span style="font-weight:400;font-size:10px;opacity:.7">${dayLabels[i]}</span></th>`;
+  }).join('');
+
+  const bodyRows = tt.rows.map(row => {
+    const cells = dayHeaders.map(d => {
+      const val = row[d] || '';
+      const isT = d === todayKey;
+      let cls = 'tt-cell';
+      if (!val) cls += ' empty';
+      else if (val === 'LesUm') cls += ' lesum';
+      else if (val === 'Matur') cls += ' matur';
+      else cls += isElly ? ' lesson elly-sub' : ' lesson';
+      if (isT && val) cls += ' today-col';
+      return `<td class="${cls}">${val}</td>`;
+    }).join('');
+    return `<tr><td class="tt-time-cell">${row.time}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById(`child-${key}-tt`).innerHTML = `
+    <table class="tt-table">
+      <thead><tr><th></th>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+    <p style="font-size:11px;color:#bbb;margin-top:12px">Stundaskrá frá InfoMentor · vika 13–17. apríl 2026</p>`;
+}
+
+function populateChildWeather(key) {
+  // Reuse already-fetched weather values from main dashboard
+  const icon  = document.getElementById('wx-icon')?.textContent  || '—';
+  const temp  = document.getElementById('wx-temp')?.textContent  || '—';
+  const desc  = document.getElementById('wx-desc')?.textContent  || '—';
+  const meta  = document.getElementById('wx-meta')?.textContent  || '';
+  const strip = document.getElementById('forecast-strip')?.innerHTML || '';
+
+  if (key === 'hjalmar') {
+    document.getElementById('child-wx-icon').textContent = icon;
+    document.getElementById('child-wx-temp').textContent = temp;
+    document.getElementById('child-wx-desc').textContent = desc;
+    document.getElementById('child-wx-meta').textContent = meta;
+    document.getElementById('child-forecast-strip').innerHTML = strip;
+  } else {
+    document.getElementById('child-elly-wx-icon').textContent = icon;
+    document.getElementById('child-elly-wx-temp').textContent = temp;
+    document.getElementById('child-elly-wx-desc').textContent = desc;
+    document.getElementById('child-elly-wx-meta').textContent = meta;
+    document.getElementById('child-elly-forecast-strip').innerHTML = strip;
+  }
+}
+
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
 
 function tickClock() {
@@ -798,10 +1034,10 @@ function tickClock() {
 
 function renderDate() {
   const d = new Date();
-  document.getElementById('hdr-date').textContent =
-    `${DAYS_L[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-  document.getElementById('today-lbl').textContent =
-    `Í dag · ${DAYS_L[d.getDay()]} ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
+  const el = document.getElementById('hdr-date');
+  if (el) el.textContent = `${DAYS_L[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const tl = document.getElementById('today-lbl');
+  if (tl) tl.textContent = `Í dag · ${DAYS_L[d.getDay()]} ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
 }
 
 // ─── WEATHER ─────────────────────────────────────────────────────────────────
@@ -1234,5 +1470,71 @@ renderMonthCal();
 fetchTideData().then(() => renderTide()); // fetch real data first, then render
 loadWeather();
 </script>
+<!-- CHILD PANEL: HJÁLMAR -->
+<div class="child-panel" id="child-hjalmar">
+  <div class="child-hero">
+    <div class="child-avatar">
+      <div class="child-avatar-emoji">⚽</div>
+      <div class="child-avatar-info">
+        <h2>Hjálmar</h2>
+        <p id="child-hjalmar-status">—</p>
+      </div>
+    </div>
+    <div class="child-today-activities card">
+      <div class="card-lbl">Í dag — viðburðir</div>
+      <div id="child-hjalmar-events"></div>
+    </div>
+  </div>
+  <div class="child-tt-wrap">
+    <div class="card-lbl" style="margin-bottom:12px">Stundaskrá þessarar viku</div>
+    <div id="child-hjalmar-tt"></div>
+  </div>
+  <div class="card">
+    <div class="card-lbl">Veður · Vesturbær</div>
+    <div class="wx-main">
+      <div class="wx-icon" id="child-wx-icon">⏳</div>
+      <div class="wx-temp" id="child-wx-temp">—</div>
+      <div class="wx-info">
+        <div class="wx-desc" id="child-wx-desc">Loading...</div>
+        <div class="wx-meta" id="child-wx-meta"></div>
+      </div>
+    </div>
+    <div class="forecast-strip" id="child-forecast-strip"></div>
+  </div>
+</div>
+
+<!-- CHILD PANEL: ELLY -->
+<div class="child-panel" id="child-elly">
+  <div class="child-hero">
+    <div class="child-avatar">
+      <div class="child-avatar-emoji">🎭</div>
+      <div class="child-avatar-info">
+        <h2>Elly</h2>
+        <p id="child-elly-status">—</p>
+      </div>
+    </div>
+    <div class="child-today-activities card">
+      <div class="card-lbl">Í dag — viðburðir</div>
+      <div id="child-elly-events"></div>
+    </div>
+  </div>
+  <div class="child-tt-wrap">
+    <div class="card-lbl" style="margin-bottom:12px">Stundaskrá þessarar viku</div>
+    <div id="child-elly-tt"></div>
+  </div>
+  <div class="card">
+    <div class="card-lbl">Veður · Vesturbær</div>
+    <div class="wx-main">
+      <div class="wx-icon" id="child-elly-wx-icon">⏳</div>
+      <div class="wx-temp" id="child-elly-wx-temp">—</div>
+      <div class="wx-info">
+        <div class="wx-desc" id="child-elly-wx-desc">Loading...</div>
+        <div class="wx-meta" id="child-elly-wx-meta"></div>
+      </div>
+    </div>
+    <div class="forecast-strip" id="child-elly-forecast-strip"></div>
+  </div>
+</div>
+
 </body>
 </html>
