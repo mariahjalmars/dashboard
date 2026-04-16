@@ -1,46 +1,53 @@
-.topbar {
-  padding: 16px;
-  height: 60px;
-}
-
-.clock {
-  font-size: 28px;
-}
-
-.main {
-  padding: 12px;
-}
-
-.legend {
-  margin-bottom: 12px;
-}
-
-.week-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-/* Media Queries */
-@media (max-width: 768px) {
-  .topbar {
-    padding: 16px;
-  }
-  .week-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .topbar {
-    padding: 16px;
-    height: auto;
-  }
-  .modal {
-    width: 100%;
-  }
-}
-
-/* General styles for improved readability */
-body {
-  font-size: 16px; /* Adjust this value as needed */
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }
+        .topbar { background: #333; color: white; padding: 15px; text-align: center; font-size: 1.2em; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+        .card { background: white; margin: 15px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card h2 { margin-bottom: 10px; color: #333; }
+        .card p { margin: 10px 0; color: #666; }
+        @media (max-width: 768px) { .topbar { font-size: 1em; } .card { padding: 15px; } }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>Dashboard</h1>
+        <div id="clock"></div>
+    </div>
+    <div class="container">
+        <div class="card">
+            <h2>☀️ Weather</h2>
+            <p>Temperature: 20°C</p>
+            <p>Condition: Sunny</p>
+        </div>
+        <div class="card">
+            <h2>🚗 Traffic</h2>
+            <p>Status: Moderate</p>
+        </div>
+        <div class="card">
+            <h2>📅 Events Today</h2>
+            <p>✓ Meeting at 10 AM</p>
+            <p>✓ Lunch at 12 PM</p>
+        </div>
+        <div class="card">
+            <h2>📊 Week Overview</h2>
+            <p>Mon: Project Deadline</p>
+            <p>Tue: Team Meeting</p>
+            <p>Wed: Webinar</p>
+        </div>
+    </div>
+    <script>
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
