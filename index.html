@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fjölskyldudashboard</title>
-<script src="https://accounts.google.com/gsi/client" async></script>
-<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -590,19 +588,9 @@ body.child-mode-elly    { --accent: #8e24aa; }
 <script>
 // ─── CALENDAR DATA ────────────────────────────────────────────────────────────
 
-// ─── GOOGLE CALENDAR CONFIG ──────────────────────────────────────────────────
-const CLIENT_ID = '865507997051-8a0l6dpl5dsk278mpnll9spmfqs1re79.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
-
-// Map Google Calendar IDs → our internal cal keys
-const GCAL_MAP = {
-  'maria@mariahjalmars.is':                                                                          'personal',
-  'ludurinnimark@gmail.com':                                                                         'imark',
-  'c_749d1e37ec8d055d17ac193c772306b8b1fc978be2f757bb9b3c856b817da5a9@group.calendar.google.com':   'family',
-  'en.is#holiday@group.v.calendar.google.com':                                                       'holiday',
-  'c_d0f4b012e536d22a55cbd59b76de2e2c533912c79383d4da1af5fce11b05e03c@group.calendar.google.com':   'elly',
-  'c_d54055db0e574746f3f96f5c016889e9580ce7fdfa9c23b7f114b94b884d0895@group.calendar.google.com':   'hjalmar',
-};
+// ─── GOOGLE APPS SCRIPT CONFIG ───────────────────────────────────────────────
+// No login needed - data served via Apps Script web app
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNjpScxDXRvvrRjaLUFS2DWB11UStRCVqZCH3M5CPDpQ8gZNFUoG-coAi1vg5yJ-TO/exec';
 
 const CALS = {
   personal: { name:'María',      color:'#ff7537' },
@@ -613,9 +601,6 @@ const CALS = {
   hjalmar:  { name:'Hjálmar',    color:'#1976d2' },
   elly:     { name:'Elly',       color:'#8e24aa' },
 };
-
-let accessToken = null;
-let calendarLoaded = false;
 
 let EVENTS = [];
 
@@ -1418,7 +1403,7 @@ function hideLoginScreen() {
 
 function initGoogleAuth() {
   // Try to restore token from sessionStorage
-  const stored = sessionStorage.getItem('gcal_token');
+  const stored = localStorage.getItem('gcal_token');
   if (stored) {
     accessToken = stored;
     hideLoginScreen();
@@ -1435,7 +1420,7 @@ function handleSignIn() {
     callback: (resp) => {
       if (resp.error) { console.error(resp); return; }
       accessToken = resp.access_token;
-      sessionStorage.setItem('gcal_token', accessToken);
+      localStorage.setItem('gcal_token', accessToken);
       hideLoginScreen();
       loadAllCalendars().then(renderAll);
     },
@@ -1495,37 +1480,9 @@ setInterval(renderTide, 60000);
 renderDate();
 fetchTideData().then(() => renderTide());
 loadWeather();
-
-// Start Google Auth flow when GIS script is ready
-window.addEventListener('load', () => {
-  if (window.google?.accounts) {
-    initGoogleAuth();
-  } else {
-    // GIS script still loading
-    const script = document.querySelector('script[src*="accounts.google.com"]');
-    if (script) script.addEventListener('load', initGoogleAuth);
-    else initGoogleAuth();
-  }
-});
+loadAllCalendars().then(renderAll);
 </script>
-<!-- LOGIN OVERLAY -->
-<div id="login-overlay" style="
-  display:flex; position:fixed; inset:0; z-index:999;
-  background:var(--dark); align-items:center; justify-content:center;
-  flex-direction:column; gap:20px;">
-  <div style="font-size:48px">📅</div>
-  <div style="color:#fff; font-size:22px; font-weight:700">Fjölskyldudashboard</div>
-  <div style="color:rgba(255,255,255,.6); font-size:14px">Tengstu Google Calendar til að sjá viðburði</div>
-  <button onclick="handleSignIn()" style="
-    margin-top:12px; padding:14px 32px;
-    background:#fff; color:var(--dark);
-    border:none; border-radius:12px;
-    font-size:16px; font-weight:700; cursor:pointer;
-    display:flex; align-items:center; gap:10px;">
-    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.9 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.3-.2-2.7-.5-4z"/></svg>
-    Skrá inn með Google
-  </button>
-</div>
+
 
 <!-- CHILD PANEL: HJÁLMAR -->
 <div class="child-panel" id="child-hjalmar">
