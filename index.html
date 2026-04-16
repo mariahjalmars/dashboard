@@ -590,7 +590,7 @@ body.child-mode-elly    { --accent: #8e24aa; }
 
 // ─── GOOGLE APPS SCRIPT CONFIG ───────────────────────────────────────────────
 // No login needed - data served via Apps Script web app
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyeXBI_uE1rt_n6oeJ-0coSZLl3llxRRvL3DkYa3TkVPkZ808eEitaCMvAQ97CjFNJq/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFRLLYiLEQrlMLxgOvqTit9zMNsae2VUrClFDrONlMfcg_zFQOUpnH7SFSK3c6Qbwa/exec';
 
 const CALS = {
   personal: { name:'María',      color:'#ff7537' },
@@ -1453,16 +1453,24 @@ async function fetchCalendarEvents(calId, calKey) {
   }).filter(e => e.date);
 }
 
-async function loadAllCalendars() {
-  EVENTS.length = 0; // clear
-  const fetches = Object.entries(GCAL_MAP).map(([calId, calKey]) =>
-    fetchCalendarEvents(calId, calKey).catch(() => [])
-  );
-  const results = await Promise.all(fetches);
-  results.forEach(evts => EVENTS.push(...evts));
-  calendarLoaded = true;
-  // Refresh every 5 minutes
-  setTimeout(() => loadAllCalendars().then(renderAll), 5 * 60 * 1000);
+function loadAllCalendars() {
+  return new Promise((resolve) => {
+    const cbName = 'gcalCB_' + Date.now();
+    window[cbName] = function(data) {
+      EVENTS.length = 0;
+      EVENTS.push(...(data.events || []));
+      delete window[cbName];
+      document.getElementById('gcal-script')?.remove();
+      resolve();
+    };
+    const s = document.createElement('script');
+    s.id = 'gcal-script';
+    s.src = APPS_SCRIPT_URL + '?callback=' + cbName;
+    s.onerror = () => { console.error('Could not load calendar'); resolve(); };
+    document.head.appendChild(s);
+    // Refresh every 10 minutes
+    setTimeout(() => loadAllCalendars().then(renderAll), 10 * 60 * 1000);
+  });
 }
 
 function renderAll() {
