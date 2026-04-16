@@ -1,0 +1,114 @@
+:root {
+  --bg: #f3f5f7;
+  --card-bg: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --topbar: #111827;
+  --topbar-text: #f9fafb;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  --radius: 12px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.topbar {
+  background: var(--topbar);
+  color: var(--topbar-text);
+  padding: 16px;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topbar h1 {
+  font-size: 1.25rem;
+}
+
+.clock {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  word-break: break-word;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.legend {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  min-height: 140px;
+}
+
+.card h2 {
+  margin-bottom: 10px;
+  font-size: 1.05rem;
+}
+
+.card p {
+  color: var(--muted);
+  margin: 6px 0;
+}
+
+@media (max-width: 768px) {
+  .week-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  main {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    min-height: auto;
+  }
+
+  .topbar h1 {
+    font-size: 1.1rem;
+  }
+
+  .clock {
+    font-size: 0.88rem;
+  }
+
+  .week-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 14px;
+  }
+}
