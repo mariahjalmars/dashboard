@@ -1,47 +1,70 @@
-'use strict';
-
-// script.js
-
-// Initialize on page load
-window.onload = function() {
-    tickClock();
-    fetchWeather();
-    setInterval(fetchWeather, 10 * 60 * 1000); // Update every 10 minutes
-};
-
 function tickClock() {
-    // Implementation for updating clock display
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toUTCString();
+    }, 1000);
 }
 
-function renderDate() {
-    // Implementation for rendering the current date
+async function fetchWeather() {
+    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.6895&longitude=139.6917&hourly=temperature_2m');
+    const data = await response.json();
+    renderWeather(data.current_weather);
+    renderForecast(data.hourly);
 }
 
-function renderToday() {
-    // Implementation for rendering today's weather
+function renderWeather(currentWeather) {
+    const weatherElement = document.getElementById('weather');
+    weatherElement.innerText = `Current Temperature: ${currentWeather.temperature}°C`; 
 }
 
-function renderWeek() {
-    // Implementation for rendering the week's weather
+function renderForecast(hourlyData) {
+    const forecastElement = document.getElementById('forecast');
+    forecastElement.innerHTML = ''; // Clear previous forecast
+    hourlyData.temperature_2m.forEach(temp => {
+        const hourDiv = document.createElement('div');
+        hourDiv.innerText = `Temperature: ${temp}°C`;
+        forecastElement.appendChild(hourDiv);
+    });
 }
 
-function renderMonthCal() {
-    // Implementation for rendering the monthly calendar
+function renderToday(events) {
+    const todayElement = document.getElementById('today');
+    todayElement.innerHTML = ''; // Clear previous events
+    events.forEach(event => {
+        const eventDiv = document.createElement('div');
+        eventDiv.innerText = event;
+        todayElement.appendChild(eventDiv);
+    });
 }
 
-function fetchWeather() {
-    // Implementation for fetching weather data
-    // After fetching, call renderWeather and renderForecast
+function renderWeek(weekEvents) {
+    const weekElement = document.getElementById('week');
+    weekElement.innerHTML = ''; // Clear previous events
+    weekEvents.forEach(event => {
+        const eventDiv = document.createElement('div');
+        eventDiv.innerText = event;
+        weekElement.appendChild(eventDiv);
+    });
 }
 
-function renderWeather() {
-    // Implementation for rendering current weather
+function renderMonthCal(monthEvents) {
+    const monthElement = document.getElementById('month');
+    monthElement.innerHTML = ''; // Clear previous events
+    monthEvents.forEach(event => {
+        const eventDiv = document.createElement('div');
+        eventDiv.innerText = event;
+        monthElement.appendChild(eventDiv);
+    });
 }
 
-function renderForecast() {
-    // Implementation for rendering the weather forecast
+function renderTide(tideInfo) {
+    const tideElement = document.getElementById('tide');
+    tideElement.innerText = `Tide: ${tideInfo.tide}`;
 }
 
-function renderTide() {
-    // Implementation for rendering tide information
+function initDashboard() {
+    tickClock();
+    setInterval(fetchWeather, 10 * 60 * 1000); // Fetch weather every 10 minutes
 }
+
+initDashboard();
