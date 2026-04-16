@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hjálmars · Fjölskyldudashboard</title>
+<title>Fjölskyldudashboard</title>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -588,6 +590,19 @@ body.child-mode-elly    { --accent: #8e24aa; }
 <script>
 // ─── CALENDAR DATA ────────────────────────────────────────────────────────────
 
+// ─── GOOGLE CALENDAR CONFIG ──────────────────────────────────────────────────
+const CLIENT_ID = '865507997051-8a0l6dpl5dsk278mpnll9spmfqs1re79.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+
+// Map Google Calendar IDs → our internal cal keys
+const GCAL_MAP = {
+  'maria@mariahjalmars.is':                                                          'personal',
+  'ludurinnimark@gmail.com':                                                         'imark',
+  'c_749d1e37ec8d055d17ac193c772306b8b1fc978be2f757bb9b3c856b817da5a9@group.calendar.google.com': 'family',
+  'en.is#holiday@group.v.calendar.google.com':                                       'holiday',
+  'k0eepm6023ghc521v2rj75k3atub75bl@import.calendar.google.com': 'elly',
+};
+
 const CALS = {
   personal: { name:'María',      color:'#ff7537' },
   imark:    { name:'Ímark',      color:'#e53935' },
@@ -598,68 +613,10 @@ const CALS = {
   elly:     { name:'Elly',       color:'#8e24aa' },
 };
 
-const EVENTS = [
-  // ── María ──────────────────────────────────────────────────────
-  { date:'2026-04-14', title:'Vinnustofa hfb',           allDay:true, cal:'personal' },
-  { date:'2026-04-14', title:'Skoda Hildur Jóns',         allDay:true, cal:'personal' },
-  { date:'2026-04-14', start:'10:00', end:'10:30', title:'Stöðutékk Öskjuhlíð', loc:'Teams', cal:'personal' },
-  { date:'2026-04-14', start:'14:15', end:'15:15', title:'Hjálmar iðjuþjálfun', cal:'personal' },
-  { date:'2026-04-16', start:'14:00', end:'15:00', title:'Fundur kl Grindavík?', cal:'personal' },
+let accessToken = null;
+let calendarLoaded = false;
 
-  // ── Ímark ──────────────────────────────────────────────────────
-  { date:'2026-04-16', start:'14:30', end:'16:00', title:'Stjórnarfundur ÍMARK', cal:'imark' },
-
-  // ── Frídagar (opinberir) ───────────────────────────────────────
-  { date:'2026-04-23', title:'Sumardagurinn fyrsti 🌞',  allDay:true, cal:'holiday' },
-  { date:'2026-05-01', title:'Verkalýðsdagurinn 🌹',     allDay:true, cal:'holiday' },
-  { date:'2026-05-14', title:'Uppstigningardagur',        allDay:true, cal:'holiday' },
-  { date:'2026-05-24', title:'Hvítasunnudagur',           allDay:true, cal:'holiday' },
-  { date:'2026-05-25', title:'Annar í hvítasunnu',        allDay:true, cal:'holiday' },
-  { date:'2026-06-17', title:'Þjóðhátíðardagurinn 🇮🇸',  allDay:true, cal:'holiday' },
-
-  // ── Hagaskóli ─────────────────────────────────────────────────
-  { date:'2026-04-23', title:'Skólafri',                  allDay:true, cal:'school' },
-  { date:'2026-04-24', title:'Skólafri',                  allDay:true, cal:'school' },
-  { date:'2026-05-01', title:'Skólafri · Verkalýðsdagurinn', allDay:true, cal:'school' },
-  { date:'2026-05-04', title:'Starfsdagur 📋',            allDay:true, cal:'school' },
-  { date:'2026-05-14', title:'Skólafri · Uppstigningardagur', allDay:true, cal:'school' },
-  { date:'2026-05-15', title:'Skólafri',                  allDay:true, cal:'school' },
-  { date:'2026-05-24', title:'Skólafri · Hvítasunnudagur', allDay:true, cal:'school' },
-  { date:'2026-05-25', title:'Skólafri · Annar í hvítasunnu', allDay:true, cal:'school' },
-  { date:'2026-06-05', title:'Síðasti skóladagur 🎓',     allDay:true, cal:'school' },
-
-  // ── Hjálmar · Sportable ───────────────────────────────────────
-  { date:'2026-04-14', start:'16:10', end:'17:25', title:'Styrktaræfing',  loc:'Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-14', start:'17:00', end:'17:45', title:'Markmannsæfing', loc:'Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-15', start:'16:00', end:'16:45', title:'Markmannsæfing', loc:'KR, Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-15', start:'16:00', end:'17:00', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-  { date:'2026-04-15', start:'19:30', end:'22:00', title:'Miðakaup á Tjarnarball', loc:'Hátíðarsalur Hagaskóla', cal:'hjalmar' },
-  { date:'2026-04-17', start:'15:00', end:'16:15', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-  { date:'2026-04-17', start:'16:00', end:'16:45', title:'Markmannsæfing', loc:'KR, Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-18', start:'12:00', end:'13:15', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-  { date:'2026-04-19', title:'Helsinki Cup 🏆',           allDay:true, cal:'hjalmar' },
-  { date:'2026-04-20', title:'Helsinki Cup 🏆',           allDay:true, cal:'hjalmar' },
-  { date:'2026-04-20', start:'16:00', end:'17:15', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-
-  // ── Elly · Sportable ──────────────────────────────────────────
-  { date:'2026-04-15', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-15', start:'19:30', end:'22:00', title:'Miðakaup á Tjarnarball', loc:'Hátíðarsalur Hagaskóla', cal:'elly' },
-  { date:'2026-04-16', start:'18:20', end:'20:50', title:'Dansæfing',             loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-19', start:'16:00', end:'19:00', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-20', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-21', start:'19:00', end:'20:40', title:'Generalprufa 3. stigs', loc:'Borgarleikhúsið', cal:'elly' },
-  { date:'2026-04-22', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-23', start:'18:20', end:'20:50', title:'Dansæfing',             loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-26', start:'16:30', end:'19:00', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-27', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-];
-
-// ─── TRAVEL RANGES (expanded at init) ────────────────────────────────────────
-
-const TRIPS = [
-  { from: '2026-04-30', to: '2026-05-04', title: '✈️ Cannes',  cal: 'personal' },
-  { from: '2026-05-27', to: '2026-06-08', title: '✈️ Ítalía',  cal: 'family'   },
-];
+let EVENTS = [];
 
 // ─── ICELANDIC STRINGS ────────────────────────────────────────────────────────
 
@@ -1448,28 +1405,127 @@ function renderMonthCal() {
   el.innerHTML = html;
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+// ─── GOOGLE CALENDAR AUTH + FETCH ─────────────────────────────────────────────
 
-// Expand travel ranges into daily events
-TRIPS.forEach(t => {
-  let d = new Date(t.from + 'T00:00:00');
-  const end = new Date(t.to + 'T00:00:00');
-  while (d <= end) {
-    EVENTS.push({ date: `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`, title: t.title, allDay: true, cal: t.cal });
-    d.setDate(d.getDate() + 1);
+function showLoginScreen() {
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+function hideLoginScreen() {
+  document.getElementById('login-overlay').style.display = 'none';
+}
+
+function initGoogleAuth() {
+  // Try to restore token from sessionStorage
+  const stored = sessionStorage.getItem('gcal_token');
+  if (stored) {
+    accessToken = stored;
+    hideLoginScreen();
+    loadAllCalendars().then(renderAll);
+    return;
   }
-});
+  showLoginScreen();
+}
+
+function handleSignIn() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { console.error(resp); return; }
+      accessToken = resp.access_token;
+      sessionStorage.setItem('gcal_token', accessToken);
+      hideLoginScreen();
+      loadAllCalendars().then(renderAll);
+    },
+  });
+  client.requestAccessToken();
+}
+
+async function fetchCalendarEvents(calId, calKey) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  const end   = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString();
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&maxResults=200`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.items || []).map(item => {
+    const isAllDay = !!item.start.date;
+    const dateStr = isAllDay ? item.start.date : item.start.dateTime?.slice(0,10);
+    const startT  = isAllDay ? null : item.start.dateTime?.slice(11,16);
+    const endT    = isAllDay ? null : item.end?.dateTime?.slice(11,16);
+    return {
+      date: dateStr,
+      title: item.summary || '(No title)',
+      allDay: isAllDay,
+      start: startT,
+      end: endT,
+      loc: item.location || '',
+      cal: calKey,
+    };
+  }).filter(e => e.date);
+}
+
+async function loadAllCalendars() {
+  EVENTS.length = 0; // clear
+  const fetches = Object.entries(GCAL_MAP).map(([calId, calKey]) =>
+    fetchCalendarEvents(calId, calKey).catch(() => [])
+  );
+  const results = await Promise.all(fetches);
+  results.forEach(evts => EVENTS.push(...evts));
+  calendarLoaded = true;
+  // Refresh every 5 minutes
+  setTimeout(() => loadAllCalendars().then(renderAll), 5 * 60 * 1000);
+}
+
+function renderAll() {
+  renderDate();
+  renderToday();
+  renderWeek();
+  renderMonthCal();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 
 tickClock();
 setInterval(tickClock, 1000);
-setInterval(renderTide, 60000); // refresh tide "Núna" line every minute
+setInterval(renderTide, 60000);
 renderDate();
-renderToday();
-renderWeek();
-renderMonthCal();
-fetchTideData().then(() => renderTide()); // fetch real data first, then render
+fetchTideData().then(() => renderTide());
 loadWeather();
+
+// Start Google Auth flow when GIS script is ready
+window.addEventListener('load', () => {
+  if (window.google?.accounts) {
+    initGoogleAuth();
+  } else {
+    // GIS script still loading
+    const script = document.querySelector('script[src*="accounts.google.com"]');
+    if (script) script.addEventListener('load', initGoogleAuth);
+    else initGoogleAuth();
+  }
+});
 </script>
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" style="
+  display:flex; position:fixed; inset:0; z-index:999;
+  background:var(--dark); align-items:center; justify-content:center;
+  flex-direction:column; gap:20px;">
+  <div style="font-size:48px">📅</div>
+  <div style="color:#fff; font-size:22px; font-weight:700">Fjölskyldudashboard</div>
+  <div style="color:rgba(255,255,255,.6); font-size:14px">Tengstu Google Calendar til að sjá viðburði</div>
+  <button onclick="handleSignIn()" style="
+    margin-top:12px; padding:14px 32px;
+    background:#fff; color:var(--dark);
+    border:none; border-radius:12px;
+    font-size:16px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; gap:10px;">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.9 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.3-.2-2.7-.5-4z"/></svg>
+    Skrá inn með Google
+  </button>
+</div>
+
 <!-- CHILD PANEL: HJÁLMAR -->
 <div class="child-panel" id="child-hjalmar">
   <div class="child-hero">
