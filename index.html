@@ -322,6 +322,84 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
 
 .cal-more { font-size: 9px; color: var(--muted); }
 
+/* ── TIMETABLE MODAL ────────────────────────── */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-bg.open { display: flex; }
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px 28px;
+  width: 95%;
+  max-width: 860px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+
+.modal-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.modal-title { font-size: 18px; font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: #e0e0e0; }
+
+.tt-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+.tt-table th {
+  background: var(--dark);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 6px;
+}
+.tt-table th.today-col { background: #1976d2; }
+.tt-time-cell {
+  font-size: 10px;
+  color: #bbb;
+  text-align: right;
+  padding-right: 8px;
+  white-space: nowrap;
+  width: 88px;
+}
+.tt-cell {
+  text-align: center;
+  font-size: 11px;
+  padding: 7px 4px;
+  border-radius: 6px;
+  background: #f8f9fb;
+  min-width: 80px;
+}
+.tt-cell.lesson { background: #e3f2fd; color: #1565c0; font-weight: 600; }
+.tt-cell.lesson.elly-sub { background: #f3e5f5; color: #6a1b9a; }
+.tt-cell.matur { background: #fff8e1; color: #e65100; font-weight: 600; }
+.tt-cell.lesum { background: #e8f5e9; color: #2e7d32; font-size: 10px; }
+.tt-cell.today-col { outline: 2px solid #1976d2; }
+.tt-cell.empty { background: transparent; }
+
 @media (max-width: 900px) {
   .row2, .row3 { grid-template-columns: 1fr; }
   .week-grid { grid-template-columns: repeat(7,1fr); }
@@ -330,6 +408,17 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
 </style>
 </head>
 <body>
+
+<!-- TIMETABLE MODAL -->
+<div class="modal-bg" id="tt-modal" onclick="if(event.target===this)closeTT()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="tt-title">Stundaskrá</div>
+      <button class="modal-close" onclick="closeTT()">✕</button>
+    </div>
+    <div id="tt-body"></div>
+  </div>
+</div>
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -353,8 +442,8 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
 <div class="legend-bar">
   <span class="li-all active" id="filter-all" onclick="setFilter(null)">Allir</span>
   <div class="li" id="filter-maria"   onclick="setFilter('maria')">  <div class="dot" style="background:var(--personal)"></div>María</div>
-  <div class="li" id="filter-hjalmar" onclick="setFilter('hjalmar')"><div class="dot" style="background:var(--hjalmar)"></div>Hjálmar</div>
-  <div class="li" id="filter-elly"    onclick="setFilter('elly')">   <div class="dot" style="background:var(--elly)"></div>Elly</div>
+  <div class="li" id="filter-hjalmar" onclick="setFilter('hjalmar')"><div class="dot" style="background:var(--hjalmar)"></div><span onclick="event.stopPropagation();showTT('hjalmar')" title="Sjá stundaskrá" style="border-bottom:1.5px dotted var(--hjalmar);cursor:pointer">Hjálmar</span></div>
+  <div class="li" id="filter-elly"    onclick="setFilter('elly')">   <div class="dot" style="background:var(--elly)"></div><span onclick="event.stopPropagation();showTT('elly')" title="Sjá stundaskrá" style="border-bottom:1.5px dotted var(--elly);cursor:pointer">Elly</span></div>
   <div class="li" id="filter-family"  onclick="setFilter('family')"> <div class="dot" style="background:var(--family)"></div>Fjölskylda</div>
   <div class="li" style="cursor:default"><div class="dot" style="background:var(--school)"></div>Hagaskóli</div>
   <div class="li" style="cursor:default"><div class="dot" style="background:var(--holiday)"></div>Frídagar</div>
@@ -559,6 +648,37 @@ function evtRow(e, showLoc=true) {
   </div>`;
 }
 
+// ─── TIMETABLE DATA ───────────────────────────────────────────────────────────
+
+const TIMETABLES = {
+  hjalmar: {
+    name: 'Hjálmar', color: '#1976d2',
+    rows: [
+      { time:'08:50',       mán:'LesUm',           þri:'LesUm',            mið:'LesUm',            fim:'LesUm',         fös:'LesUm' },
+      { time:'09:10–10:10', mán:'Stærðfræði',      þri:'Íslenska',         mið:'Myndmennt/Textíl', fim:'Náttúrufræði',  fös:'Íþróttir' },
+      { time:'10:30–11:30', mán:'Íslenska',        þri:'Umsjón',           mið:'Myndmennt/Textíl', fim:'Enska',         fös:'Enska' },
+      { time:'11:30–12:00', mán:'Matur',           þri:'Leiklist/Tónlist', mið:'Samfélagsfræði',   fim:'Íslenska',      fös:'Íslenska' },
+      { time:'12:00–13:00', mán:'Smíði/Heimilis.', þri:'Matur',            mið:'',                 fim:'Matur',         fös:'Matur' },
+      { time:'12:30–13:00', mán:'',                þri:'Leiklist/Tónlist', mið:'Matur',            fim:'Íslenska',      fös:'Íslenska' },
+      { time:'13:00–14:00', mán:'Smíði/Heimilis.', þri:'Danska',           mið:'Stærðfræði',       fim:'Stærðfræði',    fös:'Samfélagsfræði' },
+      { time:'14:00–15:00', mán:'Danska',          þri:'Náttúrufræði',     mið:'',                 fim:'Íþróttir',      fös:'' },
+    ]
+  },
+  elly: {
+    name: 'Elly', color: '#8e24aa',
+    rows: [
+      { time:'08:50',       mán:'LesUm',            þri:'LesUm',            mið:'LesUm',        fim:'LesUm',         fös:'LesUm' },
+      { time:'09:10–10:10', mán:'Myndmennt/Textíl', þri:'Samfélagsfræði',   mið:'Íslenska',     fim:'Enska',         fös:'Smíði/Heimilis.' },
+      { time:'10:30–11:30', mán:'Myndmennt/Textíl', þri:'Umsjón',           mið:'Stærðfræði',   fim:'Íslenska',      fös:'Smíði/Heimilis.' },
+      { time:'11:30–12:00', mán:'Matur',            þri:'Íslenska',         mið:'Danska',       fim:'Matur',         fös:'Matur' },
+      { time:'12:00–13:00', mán:'Stærðfræði',       þri:'Matur',            mið:'',             fim:'Danska',        fös:'Íþróttir' },
+      { time:'12:30–13:00', mán:'',                 þri:'Íslenska',         mið:'Matur',        fim:'',              fös:'' },
+      { time:'13:00–14:00', mán:'Náttúrufræði',     þri:'Enska',            mið:'Náttúrufræði', fim:'Íþróttir',      fös:'Íslenska' },
+      { time:'14:00–15:00', mán:'Samfélagsfræði',   þri:'Leiklist/Tónlist', mið:'',             fim:'Stærðfræði',    fös:'' },
+    ]
+  }
+};
+
 // ─── PERSON FILTER ───────────────────────────────────────────────────────────
 
 let activeFilter = null;
@@ -580,14 +700,61 @@ function filterEvts(evts) {
 
 function setFilter(key) {
   activeFilter = key;
-  // Update button states
   document.querySelectorAll('.li[id^="filter-"]').forEach(el => el.classList.remove('active'));
   document.getElementById('filter-all').classList.toggle('active', !key);
   if (key) document.getElementById(`filter-${key}`)?.classList.add('active');
-  // Re-render
   renderToday();
   renderWeek();
   renderMonthCal();
+}
+
+// ─── TIMETABLE MODAL ──────────────────────────────────────────────────────────
+
+function showTT(key) {
+  const tt = TIMETABLES[key];
+  if (!tt) return;
+
+  const today = new Date();
+  const dowMap = { 1:'mán', 2:'þri', 3:'mið', 4:'fim', 5:'fös' };
+  const todayKey = dowMap[today.getDay()] || '';
+  const dayHeaders = ['mán','þri','mið','fim','fös'];
+  const dayLabels  = ['Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur'];
+
+  const isElly = key === 'elly';
+
+  const headerCells = dayHeaders.map((d, i) => {
+    const isT = d === todayKey;
+    return `<th class="${isT ? 'today-col' : ''}">${dayLabels[i].slice(0,3)}<br><span style="font-weight:400;font-size:10px;opacity:.7">${dayLabels[i]}</span></th>`;
+  }).join('');
+
+  const bodyRows = tt.rows.map(row => {
+    const cells = dayHeaders.map(d => {
+      const val = row[d] || '';
+      const isT = d === todayKey;
+      let cls = 'tt-cell';
+      if (!val) cls += ' empty';
+      else if (val === 'LesUm') cls += ' lesum';
+      else if (val === 'Matur') cls += ' matur';
+      else cls += isElly ? ' lesson elly-sub' : ' lesson';
+      if (isT && val) cls += ' today-col';
+      return `<td class="${cls}">${val}</td>`;
+    }).join('');
+    return `<tr><td class="tt-time-cell">${row.time}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('tt-title').innerHTML =
+    `<span style="color:${tt.color}">●</span> Stundaskrá — ${tt.name}`;
+  document.getElementById('tt-body').innerHTML = `
+    <table class="tt-table">
+      <thead><tr><th></th>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+    <p style="font-size:11px;color:#bbb;margin-top:12px">Stundaskrá frá InfoMentor · vika 13–17. apríl 2026</p>`;
+  document.getElementById('tt-modal').classList.add('open');
+}
+
+function closeTT() {
+  document.getElementById('tt-modal').classList.remove('open');
 }
 
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
@@ -770,9 +937,10 @@ function renderTide() {
   const pathD = pts.map((p,i) => `${i===0?'M':'L'}${xOf(p.t).toFixed(1)},${yOf(p.h).toFixed(1)}`).join(' ');
   const fillD = `${pathD} L${xOf(24)},${(PAD_T+chartH).toFixed(1)} L${xOf(0)},${(PAD_T+chartH).toFixed(1)} Z`;
 
-  // Current time line
+  // Current time line — Iceland is UTC+0 year-round
   const nowH = now.getUTCHours() + now.getUTCMinutes()/60 + now.getUTCSeconds()/3600;
   const nowX = xOf(nowH);
+
 
   // Hour labels (every 3h)
   let hourLabels = '';
@@ -962,6 +1130,7 @@ TRIPS.forEach(t => {
 
 tickClock();
 setInterval(tickClock, 1000);
+setInterval(renderTide, 60000); // refresh tide "Núna" line every minute
 renderDate();
 renderToday();
 renderWeek();
