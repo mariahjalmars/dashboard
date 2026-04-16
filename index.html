@@ -155,6 +155,34 @@ body {
 }
 .clothing p { font-size: 13px; color: #555; line-height: 1.5; }
 
+/* ── HOURLY FORECAST ────────────────────────── */
+.forecast-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-top: 12px;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.forecast-strip::-webkit-scrollbar { display: none; }
+.fc-hour {
+  flex: 0 0 auto;
+  text-align: center;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 6px 7px;
+  min-width: 46px;
+  border: 1.5px solid transparent;
+  transition: border-color .15s;
+}
+.fc-hour.rain  { background: #e3f2fd; border-color: #90caf9; }
+.fc-hour.snow  { background: #f3e5f5; border-color: #ce93d8; }
+.fc-hour.now   { border-color: #ff7537; background: #fff3ee; }
+.fc-time  { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.fc-icon  { font-size: 18px; line-height: 1.2; }
+.fc-temp  { font-size: 11px; font-weight: 600; color: var(--text); }
+.fc-prec  { font-size: 9px; color: #1976d2; margin-top: 1px; }
+
 /* ── TRAFFIC CARD ───────────────────────────── */
 .tr-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -466,9 +494,10 @@ svg.tide-svg { width: 100%; height: 130px; display: block; }
         </div>
       </div>
       <div class="clothing">
-        <div class="lbl">Klæðnaður</div>
+        <div class="lbl">Clothing</div>
         <p id="wx-cloth">...</p>
       </div>
+      <div class="forecast-strip" id="forecast-strip"></div>
     </div>
     <div class="card">
       <div class="card-lbl">Umferð</div>
@@ -778,146 +807,213 @@ function renderDate() {
 // ─── WEATHER ─────────────────────────────────────────────────────────────────
 
 const WX = {
-  0: ['Skýlaust','☀️'],    1: ['Aðallega skýlægt','🌤️'],
-  2: ['Hlutskýjað','⛅'],  3: ['Skýjað','☁️'],
-  45:['Þoka','🌫️'],       48:['Þoka','🌫️'],
-  51:['Súlur','🌦️'],      53:['Súlur','🌦️'],      55:['Súlur','🌦️'],
-  61:['Rigning','🌧️'],    63:['Rigning','🌧️'],    65:['Þung rigning','🌧️'],
-  71:['Snjókoma','🌨️'],   73:['Snjókoma','🌨️'],   75:['Þung snjókoma','❄️'],
-  80:['Skúrar','🌦️'],     81:['Skúrar','🌧️'],     82:['Þungir skúrar','⛈️'],
-  95:['Þrumuveður','⛈️'], 96:['Þrumuveður','⛈️'], 99:['Þrumuveður','⛈️'],
+  0: ['Clear sky','☀️'],        1: ['Mainly clear','🌤️'],
+  2: ['Partly cloudy','⛅'],    3: ['Overcast','☁️'],
+  45:['Fog','🌫️'],              48:['Icy fog','🌫️'],
+  51:['Light drizzle','🌦️'],   53:['Drizzle','🌦️'],       55:['Heavy drizzle','🌦️'],
+  61:['Light rain','🌧️'],      63:['Rain','🌧️'],           65:['Heavy rain','🌧️'],
+  71:['Light snow','🌨️'],      73:['Snow','🌨️'],           75:['Heavy snow','❄️'],
+  80:['Rain showers','🌦️'],    81:['Showers','🌧️'],        82:['Heavy showers','⛈️'],
+  95:['Thunderstorm','⛈️'],    96:['Thunderstorm','⛈️'],   99:['Thunderstorm','⛈️'],
 };
 
 function clothing(temp, code, wind) {
-  let s = temp < 0   ? 'Ullarundirföt · þykk peysa · útijakki · hanska · húfa'
-        : temp < 5   ? 'Ullarlag · peysa · hlý jakki · hanska'
-        : temp < 10  ? 'Millilög · vindjakki'
-        : temp < 15  ? 'Peysa eða þunnt jakki'
-        : 'Létt föt';
-  if ([51,53,55,61,63,65,80,81,82,95,96,99].includes(code)) s += ' · regnkápa';
-  if (wind > 12) s += ' · vindkápa';
+  let s = temp < 0   ? 'Thermal underlayer · thick sweater · winter jacket · gloves · hat'
+        : temp < 5   ? 'Wool base layer · sweater · warm jacket · gloves'
+        : temp < 10  ? 'Mid layer · windbreaker'
+        : temp < 15  ? 'Light sweater or jacket'
+        : 'Light clothing';
+  if ([51,53,55,61,63,65,80,81,82,95,96,99].includes(code)) s += ' · rain jacket';
+  if (wind > 12) s += ' · windproof layer';
   return s;
 }
 
 async function loadWeather() {
   try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=64.1510&longitude=-21.9700&current=temperature_2m,weather_code,wind_speed_10m,precipitation&timezone=Atlantic%2FReykjavik');
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=64.1510&longitude=-21.9700&current=temperature_2m,weather_code,wind_speed_10m,precipitation&hourly=temperature_2m,weather_code,precipitation&timezone=Atlantic%2FReykjavik&forecast_days=1');
     const j = await r.json();
     const c = j.current;
     const temp = Math.round(c.temperature_2m);
     const code = c.weather_code;
     const wind = Math.round(c.wind_speed_10m);
-    const [desc, icon] = WX[code] || ['Óþekkt','🌡️'];
+    const [desc, icon] = WX[code] || ['Unknown','🌡️'];
 
     document.getElementById('wx-icon').textContent    = icon;
     document.getElementById('wx-temp').textContent    = `${temp}°`;
     document.getElementById('wx-desc').textContent    = desc;
-    document.getElementById('wx-meta').textContent    = `Vindur ${wind} m/s · Úrkoma ${c.precipitation} mm`;
+    document.getElementById('wx-meta').textContent    = `Wind ${wind} m/s · Precip ${c.precipitation} mm`;
     document.getElementById('wx-cloth').textContent   = clothing(temp, code, wind);
     document.getElementById('hdr-wx-icon').textContent = icon;
     document.getElementById('hdr-wx-temp').textContent = `${temp}°`;
     document.getElementById('hdr-wx-desc').textContent = desc;
+
+    // Hourly forecast strip
+    if (j.hourly) {
+      const nowH = new Date().getHours();
+      const strip = document.getElementById('forecast-strip');
+      let html = '';
+      for (let i = 0; i < 24; i++) {
+        const hTime = j.hourly.time[i]; // e.g. "2026-04-16T08:00"
+        const hHour = parseInt(hTime.slice(11,13));
+        const hTemp = Math.round(j.hourly.temperature_2m[i]);
+        const hCode = j.hourly.weather_code[i];
+        const hPrec = j.hourly.precipitation[i];
+        const [, hIcon] = WX[hCode] || ['','🌡️'];
+        const isNow = hHour === nowH;
+        const isRain = [51,53,55,61,63,65,80,81,82,95,96,99].includes(hCode);
+        const isSnow = [71,73,75].includes(hCode);
+        const cls = 'fc-hour' + (isNow ? ' now' : isSnow ? ' snow' : isRain ? ' rain' : '');
+        const precTxt = hPrec > 0 ? `${hPrec.toFixed(1)}mm` : '';
+        html += `<div class="${cls}">
+          <div class="fc-time">${p2(hHour)}:00</div>
+          <div class="fc-icon">${hIcon}</div>
+          <div class="fc-temp">${hTemp}°</div>
+          ${precTxt ? `<div class="fc-prec">${precTxt}</div>` : ''}
+        </div>`;
+      }
+      strip.innerHTML = html;
+      // Scroll to current hour
+      const nowIdx = Math.max(0, nowH - 1);
+      strip.scrollLeft = nowIdx * 54;
+    }
   } catch(_) {
-    document.getElementById('wx-desc').textContent = 'Gat ekki sótt veðurspá';
+    document.getElementById('wx-desc').textContent = 'Weather unavailable';
   }
 }
 
-// ─── TIDE PREDICTION (Reykjavík harmonic model) ───────────────────────────────
-//
-//  Tidal constituents from IHO data for Reykjavík.
-//  Formula: h(t) = MSL + Σ Aᵢ · cos( V₀ᵢ + σᵢ·t − gᵢ )
-//  where V₀ is the equilibrium argument at midnight UTC,
-//  σ is the constituent speed (°/hr), and g is the phase lag (°).
-//
-const MSL = 1.84; // mean sea level above chart datum (m)
+// ─── TIDE DATA (tide-forecast.com · Reykjavík) ────────────────────────────────
+//  Real observed tide times fetched from tide-forecast.com
+//  Updated daily. Times are GMT = Iceland local time.
 
-const CONSTITUENTS = [
-  // [name,  speed°/hr,    amp_m,  phase_g°]
-  // Phases calibrated against observed Reykjavík tide data
-  ['M2',  28.9841042, 1.370,  74.0],
-  ['S2',  30.0000000, 0.474, 148.0],
-  ['N2',  28.4397295, 0.270,  54.0],
-  ['K2',  30.0821373, 0.133, 148.0],
-  ['K1',  15.0410686, 0.072, 290.0],
-  ['O1',  13.9430356, 0.054, 260.0],
-  ['P1',  14.9589314, 0.023, 290.0],
-  ['Q1',  13.3986609, 0.013, 234.0],
-];
-
-function mod360(x) { return ((x % 360) + 360) % 360; }
-function deg(x)    { return x * Math.PI / 180; }
-
-function astroArgs(jd) {
-  const T = (jd - 2451545.0) / 36525.0;
-  return {
-    h:  mod360(280.46966  + 36000.76989 * T),
-    s:  mod360(218.31665  + 481267.88134 * T),
-    p:  mod360(83.35320   + 4069.01363  * T),
-    p1: mod360(282.93734  + 1.71946     * T),
-  };
-}
-
-function v0arg(name, a) {
-  const {h, s, p, p1} = a;
-  // Equilibrium arguments at midnight UTC (mean solar hour angle T₀ = 180°)
-  switch(name) {
-    case 'M2': return mod360(2*(h - s));
-    case 'S2': return 0;
-    case 'N2': return mod360(2*h - 3*s + p);
-    case 'K2': return mod360(2*h);
-    case 'K1': return mod360(270 - h);
-    case 'O1': return mod360(90 + s - 2*h);
-    case 'P1': return mod360(180 - h + p1);
-    case 'Q1': return mod360(90 + s - 2*h + p);
-    default:   return 0;
-  }
-}
-
-function tideHeight(hoursFromMidnightUTC, jdMidnight) {
-  const a = astroArgs(jdMidnight);
-  let ht = MSL;
-  for (const [name, speed, amp, g] of CONSTITUENTS) {
-    const phase = v0arg(name, a) + speed * hoursFromMidnightUTC - g;
-    ht += amp * Math.cos(deg(phase));
-  }
-  return ht;
-}
-
-function computeTidesForDay(dateUTC) {
-  const midnight = new Date(Date.UTC(
-    dateUTC.getUTCFullYear(), dateUTC.getUTCMonth(), dateUTC.getUTCDate()
-  ));
-  const jdMidnight = midnight.getTime() / 86400000 + 2440587.5;
-
-  // Sample every 10 minutes = 144 points
-  const pts = [];
-  for (let i = 0; i <= 144; i++) {
-    const t = i * (24 / 144);
-    pts.push({ t, h: tideHeight(t, jdMidnight) });
-  }
-  return pts;
-}
-
-function findExtrema(pts) {
-  const extrema = [];
-  for (let i = 1; i < pts.length - 1; i++) {
-    const prev = pts[i-1].h, cur = pts[i].h, next = pts[i+1].h;
-    if (cur > prev && cur > next) extrema.push({ t: pts[i].t, h: cur, type: 'high' });
-    else if (cur < prev && cur < next) extrema.push({ t: pts[i].t, h: cur, type: 'low' });
-  }
-  return extrema;
-}
+// Preloaded tide data keyed by date YYYY-MM-DD
+// Each entry: array of { t: hours_from_midnight, h: metres, type: 'high'|'low' }
+const TIDE_DATA = {
+  '2026-04-16': [
+    { t:  5.517, h: 3.89, type: 'high' },
+    { t: 11.750, h: 0.27, type: 'low'  },
+    { t: 17.850, h: 4.04, type: 'high' },
+  ],
+  '2026-04-17': [
+    { t:  0.200, h: 0.50, type: 'low'  },
+    { t:  6.033, h: 4.11, type: 'high' },
+    { t: 12.367, h: 0.27, type: 'low'  },
+    { t: 18.383, h: 4.27, type: 'high' },
+  ],
+  '2026-04-18': [
+    { t:  0.933, h: 0.26, type: 'low'  },
+    { t:  6.583, h: 4.19, type: 'high' },
+    { t: 12.917, h: 0.39, type: 'low'  },
+    { t: 18.967, h: 4.17, type: 'high' },
+  ],
+  '2026-04-19': [
+    { t:  1.533, h: 0.46, type: 'low'  },
+    { t:  7.183, h: 4.04, type: 'high' },
+    { t: 13.500, h: 0.64, type: 'low'  },
+    { t: 19.600, h: 3.96, type: 'high' },
+  ],
+  '2026-04-20': [
+    { t:  2.183, h: 0.80, type: 'low'  },
+    { t:  7.850, h: 3.77, type: 'high' },
+    { t: 14.133, h: 0.97, type: 'low'  },
+    { t: 20.300, h: 3.67, type: 'high' },
+  ],
+};
 
 function fmtHHMM(t) {
   const h = Math.floor(t);
   const m = Math.round((t - h) * 60);
-  return `${p2(h)}:${p2(m === 60 ? 0 : m)}`;
+  const mm = m === 60 ? 0 : m;
+  return `${p2(m === 60 ? h+1 : h)}:${p2(mm)}`;
+}
+
+// Auto-fetch real tide data from tide-forecast.com (no API key needed)
+async function fetchTideData() {
+  const todayKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+  })();
+
+  if (TIDE_DATA[todayKey]) return; // already loaded
+
+  try {
+    const url = 'https://www.tide-forecast.com/locations/Reykjavik-Iceland/tides/latest';
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    const json = await res.json();
+    const html = json.contents;
+
+    // Parse tide table rows: look for today's section
+    // Pattern: "High Tide | **HH:MM AM/PM**(Day Date) | height_ft (X.XXm)"
+    const rows = [...html.matchAll(/\|\s*(High Tide|Low Tide)\s*\|[^|]*?\*\*(\d+:\d+\s*[AP]M)\*\*\((\w+\s+\d+\s+\w+)\)[^|]*?\(([0-9.]+)\s*m\)/gi)];
+
+    const months = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
+
+    rows.forEach(row => {
+      const [, type, timeStr, dateStr, heightStr] = row;
+      // Parse date
+      const dateParts = dateStr.trim().split(/\s+/);
+      if (dateParts.length < 3) return;
+      const day = parseInt(dateParts[1]);
+      const month = months[dateParts[2]];
+      const year = new Date().getFullYear();
+      if (!month) return;
+      const key = `${year}-${p2(month)}-${p2(day)}`;
+
+      // Parse time to decimal hours
+      const [timePart, ampm] = timeStr.trim().split(/\s+/);
+      let [hh, mm] = timePart.split(':').map(Number);
+      if (ampm === 'PM' && hh !== 12) hh += 12;
+      if (ampm === 'AM' && hh === 12) hh = 0;
+      const t = hh + mm / 60;
+
+      if (!TIDE_DATA[key]) TIDE_DATA[key] = [];
+      TIDE_DATA[key].push({
+        t,
+        h: parseFloat(heightStr),
+        type: type.trim().startsWith('High') ? 'high' : 'low'
+      });
+    });
+
+    // Sort each day's entries by time
+    Object.keys(TIDE_DATA).forEach(k => {
+      TIDE_DATA[k].sort((a,b) => a.t - b.t);
+    });
+
+  } catch(e) {
+    console.log('Tide fetch failed, using preloaded data', e);
+  }
+}
+
+// Build smooth curve from sparse high/low extrema using cosine interpolation
+function buildCurveFromExtrema(extrema) {
+  if (!extrema || extrema.length < 2) return [];
+  const pts = [];
+  for (let i = 0; i < extrema.length - 1; i++) {
+    const a = extrema[i], b = extrema[i+1];
+    const steps = 20;
+    for (let s = 0; s <= steps; s++) {
+      const frac = s / steps;
+      const t = a.t + frac * (b.t - a.t);
+      // cosine interpolation between tide extrema
+      const mu = (1 - Math.cos(frac * Math.PI)) / 2;
+      const h = a.h * (1 - mu) + b.h * mu;
+      pts.push({ t, h });
+    }
+  }
+  return pts;
 }
 
 function renderTide() {
   const now = new Date();
-  const pts = computeTidesForDay(now);
-  const extrema = findExtrema(pts);
+  const todayKey = `${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`;
+  const extrema = TIDE_DATA[todayKey];
+
+  if (!extrema) {
+    document.getElementById('tide-labels').innerHTML =
+      '<span class="tide-label">Tide data not available for today</span>';
+    return;
+  }
+
+  const pts = buildCurveFromExtrema(extrema);
 
   // SVG dimensions (viewBox 960 x 130)
   const W = 960, H = 130;
@@ -1135,7 +1231,7 @@ renderDate();
 renderToday();
 renderWeek();
 renderMonthCal();
-renderTide();
+fetchTideData().then(() => renderTide()); // fetch real data first, then render
 loadWeather();
 </script>
 </body>
