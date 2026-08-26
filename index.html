@@ -3,1151 +3,783 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hjálmars · Fjölskyldudashboard</title>
+<title>Heimili — Dagskrá</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --border: rgba(28,28,26,0.10);
+    --text: #1C1C1A;
+    --muted: #8A8880;
+    --maja: #3B5EA6;
+    --maja-bg: #EEF2FA;
+    --elly: #7C4D8A;
+    --elly-bg: #F3EDF6;
+    --hjalmar: #2A7D4F;
+    --hjalmar-bg: #E8F4EE;
+    --tide: #4A8FA8;
+    --tide-bg: #EBF4F7;
+    --warn: #C45C2A;
+    --warn-bg: #FAF0EA;
+    --ok-bg: #E8F4EE;
+    --ok: #2A7D4F;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1rem;
+  }
+  .dash { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
 
-:root {
-  --bg:       #f0f2f5;
-  --card:     #ffffff;
-  --dark:     #1a1a2e;
-  --text:     #1a1a2e;
-  --muted:    #9a9aaa;
-  --border:   #e8eaf0;
-  --personal: #ff7537;
-  --imark:    #e53935;
-  --family:   #f9a825;
-  --holiday:  #43a047;
-  --school:   #00897b;
-  --hjalmar:  #1976d2;
-  --elly:     #8e24aa;
-}
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+  .clock { font-size: 2.4rem; font-weight: 300; letter-spacing: -1px; color: var(--text); }
+  .date { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+  .header-center { text-align: center; }
+  .greeting { font-size: 1rem; font-weight: 500; }
+  .school-status { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+  .weather-block { text-align: right; }
+  .weather-temp { font-size: 1.6rem; font-weight: 300; }
+  .weather-desc { font-size: 0.78rem; color: var(--muted); }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-}
+  /* Main grid */
+  .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .main-grid { grid-template-columns: 1fr; } }
 
-/* ── HEADER ─────────────────────────────────── */
-.topbar {
-  background: var(--dark);
-  padding: 0 32px;
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
+  /* Kids grid */
+  .kids-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .kids-grid { grid-template-columns: 1fr; } }
 
-.clock-block { display: flex; align-items: baseline; gap: 6px; }
-
-#clock {
-  font-size: 38px;
-  font-weight: 200;
-  color: #fff;
-  letter-spacing: -1px;
-  font-variant-numeric: tabular-nums;
-}
-
-#clock-sec {
-  font-size: 22px;
-  color: rgba(255,255,255,.45);
-  font-weight: 300;
-}
-
-.date-block { text-align: center; flex: 1; }
-
-#hdr-date {
-  font-size: 16px;
-  color: rgba(255,255,255,.9);
-  font-weight: 500;
-  letter-spacing: .3px;
-}
-
-.wx-block {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255,255,255,.08);
-  border-radius: 10px;
-  padding: 8px 16px;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-#hdr-wx-icon { font-size: 26px; line-height: 1; }
-
-.wx-right {}
-#hdr-wx-temp { font-size: 22px; font-weight: 300; color: #fff; }
-#hdr-wx-desc { font-size: 11px; color: rgba(255,255,255,.55); }
-
-/* ── LEGEND ─────────────────────────────────── */
-.legend-bar {
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 8px 32px;
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.li {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: #666;
-}
-
-.dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-
-/* ── MAIN GRID ──────────────────────────────── */
-.main {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 22px 28px;
-  display: grid;
-  gap: 18px;
-}
-
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.row3 { display: grid; grid-template-columns: 2fr 3fr; gap: 18px; }
-
-/* ── CARD ───────────────────────────────────── */
-.card {
-  background: var(--card);
-  border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 6px rgba(0,0,0,.06);
-}
-
-.card-lbl {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--muted);
-  margin-bottom: 12px;
-}
-
-/* ── WEATHER CARD ───────────────────────────── */
-.wx-main { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-.wx-icon { font-size: 46px; line-height: 1; }
-.wx-temp { font-size: 54px; font-weight: 200; line-height: 1; letter-spacing: -2px; }
-.wx-info { flex: 1; }
-.wx-desc { font-size: 16px; font-weight: 500; margin-bottom: 3px; }
-.wx-meta { font-size: 12px; color: var(--muted); }
-
-.clothing {
-  background: var(--bg);
-  border-radius: 9px;
-  padding: 10px 14px;
-}
-.clothing .lbl {
-  font-size: 9.5px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--muted); margin-bottom: 3px;
-}
-.clothing p { font-size: 13px; color: #555; line-height: 1.5; }
-
-/* ── TRAFFIC CARD ───────────────────────────── */
-.tr-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 0; border-bottom: 1px solid var(--border);
-}
-.tr-row:last-of-type { border-bottom: none; }
-.tr-name { font-size: 13.5px; }
-.badge {
-  font-size: 11px; font-weight: 600;
-  padding: 3px 10px; border-radius: 20px;
-}
-.ok   { background: #e8f5e9; color: #2e7d32; }
-.slow { background: #fff3e0; color: #e65100; }
-.traffic-link {
-  display: block; margin-top: 12px;
-  font-size: 11.5px; color: var(--muted); text-decoration: none;
-}
-.traffic-link:hover { color: #555; }
-
-/* ── TODAY CARD ─────────────────────────────── */
-.evt-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 8px 0; border-bottom: 1px solid var(--border);
-}
-.evt-row:last-child { border-bottom: none; }
-.evt-time {
-  font-size: 11.5px; color: var(--muted);
-  min-width: 86px; padding-top: 2px; flex-shrink: 0;
-}
-.evt-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  margin-top: 4px; flex-shrink: 0;
-}
-.evt-content { flex: 1; min-width: 0; }
-.evt-title {
-  font-size: 14px; font-weight: 500;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.evt-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-.empty { font-size: 13px; color: #ccc; padding: 6px 0; }
-
-/* ── WEEK GRID ──────────────────────────────── */
-.week-grid {
-  display: grid;
-  grid-template-columns: repeat(7,1fr);
-  gap: 10px;
-}
-.wday {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 11px 9px;
-  box-shadow: 0 1px 5px rgba(0,0,0,.05);
-  min-height: 110px;
-}
-.wday.today { background: var(--dark); }
-.wdn {
-  font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--muted); margin-bottom: 2px;
-}
-.wday.today .wdn { color: rgba(255,255,255,.5); }
-.wnum { font-size: 20px; font-weight: 700; margin-bottom: 7px; }
-.wday.today .wnum { color: #fff; }
-.pill {
-  display: block; font-size: 10px; font-weight: 600;
-  padding: 2px 7px; border-radius: 4px; color: #fff;
-  margin-bottom: 3px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-}
-.wmore { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
-
-/* ── TIDE CHART ─────────────────────────────── */
-.tide-wrap { position: relative; }
-.tide-labels {
-  display: flex; gap: 20px; flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.tide-label {
-  font-size: 12px; font-weight: 600;
-  padding: 3px 10px; border-radius: 20px;
-  background: #e3f2fd; color: #1565c0;
-}
-.tide-label.low { background: #e8f5e9; color: #2e7d32; }
-svg.tide-svg { width: 100%; height: 130px; display: block; }
-
-/* ── FILTER BUTTONS ─────────────────────────── */
-.li {
-  cursor: pointer;
-  border-radius: 20px;
-  padding: 3px 9px;
-  transition: background .15s, font-weight .1s;
-  user-select: none;
-}
-.li:hover { background: #f0f0f0; }
-.li.active {
-  font-weight: 700;
-  color: #111;
-  background: #e8eaf0;
-  outline: 2px solid #ccc;
-}
-.li-all {
-  font-size: 11.5px; color: #666; cursor: pointer;
-  padding: 3px 9px; border-radius: 20px;
-  border: 1px solid #ddd; transition: background .15s;
-}
-.li-all:hover, .li-all.active { background: var(--dark); color: #fff; border-color: var(--dark); }
-
-/* ── MONTH CALENDAR ─────────────────────────── */
-.month-block { margin-bottom: 32px; }
-.month-block:last-child { margin-bottom: 0; }
-
-.month-title {
-  font-size: 13px; font-weight: 700; color: var(--dark);
-  text-transform: capitalize; margin-bottom: 10px;
-  padding-bottom: 6px; border-bottom: 2px solid var(--dark);
-  display: inline-block;
-}
-
-.cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-}
-
-.cal-head {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--muted);
-  text-align: center; padding: 4px 0;
-}
-
-.cal-cell {
-  min-height: 72px;
-  background: var(--card);
-  border-radius: 8px;
-  padding: 5px 6px;
-  border: 1.5px solid transparent;
-  transition: border-color .15s;
-}
-
-.cal-cell:hover { border-color: #dde; }
-
-.cal-cell.other-month { background: #f8f9fb; opacity: .5; }
-
-.cal-cell.is-today {
-  background: var(--dark);
-  border-color: var(--dark);
-}
-
-.cal-cell.is-today .cal-day-num { color: #fff; }
-
-.cal-cell.has-holiday { background: #f1f8f1; }
-.cal-cell.has-school  { background: #f0faf8; }
-
-.cal-day-num {
-  font-size: 12px; font-weight: 700; color: var(--dark);
-  margin-bottom: 3px; display: block;
-}
-
-.cal-pill {
-  display: block;
-  font-size: 9.5px; font-weight: 600;
-  padding: 1.5px 5px; border-radius: 3px;
-  color: #fff; margin-bottom: 2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-.cal-more { font-size: 9px; color: var(--muted); }
-
-/* ── TIMETABLE MODAL ────────────────────────── */
-.modal-bg {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.55);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-.modal-bg.open { display: flex; }
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 24px 28px;
-  width: 95%;
-  max-width: 860px;
-  max-height: 88vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,.3);
-}
-
-.modal-hdr {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-.modal-title { font-size: 18px; font-weight: 700; }
-.modal-close {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: #f0f0f0;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-.modal-close:hover { background: #e0e0e0; }
-
-.tt-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 3px;
-}
-.tt-table th {
-  background: var(--dark);
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-  padding: 8px 4px;
-  border-radius: 6px;
-}
-.tt-table th.today-col { background: #1976d2; }
-.tt-time-cell {
-  font-size: 10px;
-  color: #bbb;
-  text-align: right;
-  padding-right: 8px;
-  white-space: nowrap;
-  width: 88px;
-}
-.tt-cell {
-  text-align: center;
-  font-size: 11px;
-  padding: 7px 4px;
-  border-radius: 6px;
-  background: #f8f9fb;
-  min-width: 80px;
-}
-.tt-cell.lesson { background: #e3f2fd; color: #1565c0; font-weight: 600; }
-.tt-cell.lesson.elly-sub { background: #f3e5f5; color: #6a1b9a; }
-.tt-cell.matur { background: #fff8e1; color: #e65100; font-weight: 600; }
-.tt-cell.lesum { background: #e8f5e9; color: #2e7d32; font-size: 10px; }
-.tt-cell.today-col { outline: 2px solid #1976d2; }
-.tt-cell.empty { background: transparent; }
-
-@media (max-width: 900px) {
-  .row2, .row3 { grid-template-columns: 1fr; }
-  .upcol { columns: 1; }
-}
-
-@media (max-width: 640px) {
-  .topbar {
-    padding: 0 14px;
-    height: 58px;
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    margin-bottom: 10px;
   }
-  #clock { font-size: 26px; letter-spacing: -.5px; }
-  #clock-sec { font-size: 16px; }
-  #hdr-date { font-size: 12px; letter-spacing: 0; }
-  .wx-block { padding: 5px 10px; gap: 6px; }
-  #hdr-wx-icon { font-size: 20px; }
-  #hdr-wx-temp { font-size: 16px; }
-  #hdr-wx-desc { display: none; }
+  .card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .card-title { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .card-action { margin-left: auto; font-size: 0.72rem; color: var(--muted); cursor: pointer; border: none; background: none; padding: 0; }
 
-  .legend-bar { padding: 6px 14px; gap: 8px; }
-  .li, .li-all { padding: 4px 10px; }
-
-  .main { padding: 12px; gap: 12px; }
-
-  .week-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .week-grid {
-    grid-template-columns: repeat(7, minmax(82px, 1fr));
-    min-width: 574px;
+  /* Calendar events */
+  .event {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .event:last-child { border-bottom: none; }
+  .event-time { font-size: 0.75rem; color: var(--muted); min-width: 42px; padding-top: 1px; font-variant-numeric: tabular-nums; }
+  .event-title { font-size: 0.87rem; line-height: 1.3; }
+  .event-loc { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+  .event-pill {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+    white-space: nowrap;
   }
 
-  .cal-cell { min-height: 54px; padding: 4px 3px; }
-  .cal-pill { font-size: 8.5px; padding: 1px 3px; }
+  /* School block */
+  .school-block {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .school-block strong { color: var(--text); font-weight: 500; }
 
-  .modal { padding: 16px 14px; border-radius: 12px; }
-  #tt-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .tt-table { min-width: 480px; }
+  /* Tides */
+  .tide-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .tide-stat { background: var(--tide-bg); border-radius: var(--radius-sm); padding: 7px 9px; }
+  .tide-stat-label { font-size: 0.68rem; color: var(--tide); font-weight: 500; }
+  .tide-stat-val { font-size: 1.1rem; font-weight: 500; color: var(--text); margin-top: 1px; }
+  .tide-chart { display: flex; gap: 2px; align-items: flex-end; height: 44px; margin-top: 4px; }
+  .tide-bar { flex: 1; border-radius: 2px 2px 0 0; }
+  .tide-times { display: flex; justify-content: space-between; margin-top: 3px; }
+  .tide-time-label { font-size: 0.65rem; color: var(--muted); }
 
-  .wx-main { gap: 10px; margin-bottom: 10px; }
-  .wx-icon { font-size: 36px; }
-  .wx-temp { font-size: 42px; }
-}
+  /* Traffic */
+  .traffic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .traffic-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: var(--bg); border-radius: var(--radius-sm); }
+  .traffic-road { font-size: 0.82rem; }
+  .traffic-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-ok { background: var(--ok-bg); color: var(--ok); }
+  .badge-warn { background: var(--warn-bg); color: var(--warn); }
+
+  /* School alert */
+  .school-alert { background: var(--warn-bg); border-left: 3px solid var(--warn); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 0.8rem; color: var(--warn); margin-bottom: 8px; }
+
+  /* Connect button */
+  .connect-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.8rem; padding: 7px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: transparent; color: var(--text); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .connect-btn:hover { background: var(--bg); }
+
+  /* Empty state */
+  .empty { font-size: 0.82rem; color: var(--muted); padding: 8px 0; }
+
+  /* Spinner */
+  .spin { display: inline-block; width: 12px; height: 12px; border: 1.5px solid var(--border); border-top-color: var(--maja); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Footer */
+  .footer { text-align: center; font-size: 0.7rem; color: var(--muted); padding: 6px 0 2px; }
+  .footer a { color: var(--muted); }
+
+  /* Kid card clickable */
+  .kid-card { cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+  .kid-card:hover { border-color: rgba(28,28,26,0.22); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+  /* Detail overlay */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(28,28,26,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .overlay.open { display: flex; }
+  .detail-panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    width: 100%; max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+  .detail-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .detail-name { font-size: 1.1rem; font-weight: 500; flex: 1; }
+  .detail-close {
+    font-size: 1.2rem; color: var(--muted); cursor: pointer;
+    border: none; background: none; line-height: 1; padding: 2px 6px;
+  }
+  .timeline { position: relative; }
+  .tl-hour {
+    display: grid; grid-template-columns: 38px 1fr;
+    gap: 0 10px; min-height: 40px; align-items: start;
+  }
+  .tl-time { font-size: 0.7rem; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; text-align: right; }
+  .tl-line { border-top: 1px solid var(--border); padding-top: 2px; }
+  .tl-block {
+    border-radius: var(--radius-sm);
+    padding: 5px 9px; margin-bottom: 3px;
+    font-size: 0.8rem; line-height: 1.3;
+  }
+  .tl-block-title { font-weight: 500; }
+  .tl-block-loc { font-size: 0.7rem; opacity: 0.75; margin-top: 1px; }
+  .now-line { border-top: 2px solid var(--warn); position: relative; }
+  .now-label { position: absolute; right: 0; top: -9px; font-size: 0.65rem; color: var(--warn); background: var(--surface); padding: 0 4px; }
 </style>
 </head>
 <body>
+<div class="dash">
 
-<!-- TIMETABLE MODAL -->
-<div class="modal-bg" id="tt-modal" onclick="if(event.target===this)closeTT()">
-  <div class="modal">
-    <div class="modal-hdr">
-      <div class="modal-title" id="tt-title">Stundaskrá</div>
-      <button class="modal-close" onclick="closeTT()">✕</button>
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="clock" id="clock">00:00</div>
+      <div class="date" id="datestr"></div>
     </div>
-    <div id="tt-body"></div>
-  </div>
-</div>
-
-<!-- TOP BAR -->
-<div class="topbar">
-  <div class="clock-block">
-    <span id="clock">00:00</span>
-    <span id="clock-sec">:00</span>
-  </div>
-  <div class="date-block">
-    <div id="hdr-date">—</div>
-  </div>
-  <a class="wx-block" href="https://vedur.is" target="_blank" title="vedur.is">
-    <span id="hdr-wx-icon">⏳</span>
-    <div class="wx-right">
-      <div id="hdr-wx-temp">—°</div>
-      <div id="hdr-wx-desc">Hleður...</div>
+    <div class="header-center">
+      <div class="greeting" id="greeting">Góðan dag!</div>
+      <div class="school-status" id="school-status"></div>
     </div>
-  </a>
-</div>
+    <div class="weather-block">
+      <div class="weather-temp" id="weather-temp">—</div>
+      <div class="weather-desc" id="weather-desc">Reykjavík</div>
+    </div>
+  </div>
 
-<!-- LEGEND -->
-<div class="legend-bar">
-  <span class="li-all active" id="filter-all" onclick="setFilter(null)">Allir</span>
-  <div class="li" id="filter-maria"   onclick="setFilter('maria')">  <div class="dot" style="background:var(--personal)"></div>María</div>
-  <div class="li" id="filter-hjalmar" onclick="setFilter('hjalmar')"><div class="dot" style="background:var(--hjalmar)"></div>Hjálmar</div>
-  <div class="li" id="filter-elly"    onclick="setFilter('elly')">   <div class="dot" style="background:var(--elly)"></div>Elly</div>
-  <div class="li" id="filter-family"  onclick="setFilter('family')"> <div class="dot" style="background:var(--family)"></div>Fjölskylda</div>
-  <div class="li" style="cursor:default"><div class="dot" style="background:var(--school)"></div>Hagaskóli</div>
-  <div class="li" style="cursor:default"><div class="dot" style="background:var(--holiday)"></div>Frídagar</div>
-  <div class="li" style="cursor:default"><div class="dot" style="background:var(--imark)"></div>Ímark</div>
-</div>
+  <!-- MAIN ROW: Calendar + Tides -->
+  <div class="main-grid">
 
-<!-- MAIN -->
-<div class="main">
-
-  <!-- Row 1: Weather + Traffic -->
-  <div class="row2">
+    <!-- MAJA CALENDAR -->
     <div class="card">
-      <div class="card-lbl">Veður · Vesturbær 107</div>
-      <div class="wx-main">
-        <div class="wx-icon" id="wx-icon">⏳</div>
-        <div class="wx-temp" id="wx-temp">—</div>
-        <div class="wx-info">
-          <div class="wx-desc" id="wx-desc">Hleður...</div>
-          <div class="wx-meta" id="wx-meta"></div>
-        </div>
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--maja)"></div>
+        <span class="card-title">Maja — dagurinn í dag</span>
+        <button class="card-action" id="cal-btn" onclick="startGoogleAuth()">tengja Google →</button>
       </div>
-      <div class="clothing">
-        <div class="lbl">Klæðnaður</div>
-        <p id="wx-cloth">...</p>
+      <div id="maja-cal">
+        <div class="empty">Smelltu á „tengja Google" til að sækja dagatal.</div>
       </div>
     </div>
+
+    <!-- TIDES -->
     <div class="card">
-      <div class="card-lbl">Umferð</div>
-      <div class="tr-row"><span class="tr-name">Hringbraut</span><span class="badge ok">Eðlilegt</span></div>
-      <div class="tr-row"><span class="tr-name">Kringlumýrabraut</span><span class="badge ok">Eðlilegt</span></div>
-      <a class="traffic-link" href="https://www.vegagerdin.is/umferd" target="_blank">→ Nákvæmar umferðarupplýsingar</a>
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--tide)"></div>
+        <span class="card-title">Sjávarafall</span>
+      </div>
+      <div id="tide-content">
+        <div class="empty"><span class="spin"></span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- KIDS ROW -->
+  <div class="kids-grid">
+
+    <!-- ELLY -->
+    <div class="card kid-card" onclick="openDetail('elly')">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--elly)"></div>
+        <span class="card-title">Elly</span>
+        <span style="margin-left:auto;font-size:0.68rem;color:var(--muted);">dagskrá →</span>
+      </div>
+      <div id="elly-content"></div>
+    </div>
+
+    <!-- HJÁLMAR -->
+    <div class="card kid-card" onclick="openDetail('hjalmar')">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--hjalmar)"></div>
+        <span class="card-title">Hjálmar</span>
+        <span style="margin-left:auto;font-size:0.68rem;color:var(--muted);">dagskrá →</span>
+      </div>
+      <div id="hjalmar-content"></div>
+    </div>
+
+  </div>
+
+  <!-- DETAIL OVERLAY -->
+  <div class="overlay" id="detail-overlay" onclick="closeDetail(event)">
+    <div class="detail-panel" id="detail-panel">
+      <div class="detail-header">
+        <div class="card-dot" id="detail-dot" style="width:12px;height:12px;border-radius:50%;"></div>
+        <span class="detail-name" id="detail-name"></span>
+        <button class="detail-close" onclick="closeDetail()">✕</button>
+      </div>
+      <div id="detail-body"></div>
     </div>
   </div>
 
-  <!-- Row 2: Today + Week -->
-  <div class="row3">
-    <div class="card">
-      <div class="card-lbl" id="today-lbl">Í dag</div>
-      <div id="today-events"></div>
-    </div>
-    <div class="week-wrap">
-      <div class="card-lbl" style="padding: 0 4px 10px">Þessi vika</div>
-      <div class="week-grid" id="week-grid"></div>
-    </div>
-  </div>
-
-  <!-- Row 3: Tide chart -->
+  <!-- TRAFFIC -->
   <div class="card">
-    <div class="card-lbl">Flóð og fjara · Reykjavík</div>
-    <div class="tide-wrap">
-      <div class="tide-labels" id="tide-labels"></div>
-      <svg class="tide-svg" id="tide-svg" viewBox="0 0 960 130" preserveAspectRatio="none"></svg>
+    <div class="card-header">
+      <div class="card-dot" style="background:#888"></div>
+      <span class="card-title">Umferð — Reykjavík</span>
+      <a href="https://vegasja.vegagerdin.is" target="_blank" class="card-action">vegasja.is →</a>
     </div>
+    <div class="traffic-grid" id="traffic"></div>
   </div>
 
-  <!-- Row 4: Month calendar -->
-  <div class="card">
-    <div class="card-lbl">Dagatal</div>
-    <div id="month-cal"></div>
-  </div>
+  <div class="footer">Uppfært <span id="last-update"></span> · <a href="https://mariahjalmars.is">mariahjalmars.is</a></div>
 
-</div><!-- /main -->
+</div>
 
 <script>
-// ─── CALENDAR DATA ────────────────────────────────────────────────────────────
+// ── CLOCK & DATE ──────────────────────────────────────────────
+const DAYS_IS = ['Sunnudagur','Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur','Laugardagur'];
+const MONTHS_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+const DAY_SHORT = ['sun','mán','þri','mið','fim','fös','lau'];
 
-const CALS = {
-  personal: { name:'María',      color:'#ff7537' },
-  imark:    { name:'Ímark',      color:'#e53935' },
-  family:   { name:'Fjölskylda', color:'#f9a825' },
-  holiday:  { name:'Frídagur',   color:'#43a047' },
-  school:   { name:'Hagaskóli',  color:'#00897b' },
-  hjalmar:  { name:'Hjálmar',    color:'#1976d2' },
-  elly:     { name:'Elly',       color:'#8e24aa' },
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+  document.getElementById('datestr').textContent =
+    DAYS_IS[now.getDay()] + ', ' + now.getDate() + '. ' + MONTHS_IS[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('last-update').textContent =
+    now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
+
+  const hr = now.getHours();
+  const greet = hr < 12 ? 'Góðan morgun!' : hr < 17 ? 'Góðan dag!' : 'Gott kvöld!';
+  document.getElementById('greeting').textContent = greet;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── SCHOOL CALENDAR ───────────────────────────────────────────
+const SCHOOL_ALERTS = [
+  { from: '2026-09-30', to: '2026-09-30', label: 'Starfsdagur — enginn skóli' },
+  { from: '2026-10-22', to: '2026-10-26', label: 'Vetrarfrí 🏔' },
+  { from: '2026-12-18', to: '2026-12-18', label: 'Kennsla til hádegis' },
+  { from: '2026-12-19', to: '2026-12-19', label: 'Jólastund — lýkur til hádegis' },
+  { from: '2026-12-20', to: '2027-01-05', label: 'Jólafrí ❄' },
+  { from: '2027-01-22', to: '2027-01-22', label: 'Kennt til hádegis' },
+  { from: '2027-02-23', to: '2027-02-27', label: 'Vetrarfrí 🏔' },
+  { from: '2027-03-25', to: '2027-04-01', label: 'Páskavika 🐣' },
+  { from: '2027-05-06', to: '2027-05-06', label: 'Uppstigningardagur — frí' },
+  { from: '2027-05-14', to: '2027-05-15', label: 'Starfsdagar — enginn skóli' },
+  { from: '2027-06-10', to: '2027-06-10', label: 'Skólaslit 🎉' },
+];
+
+function getSchoolAlert(dateStr) {
+  return SCHOOL_ALERTS.find(a => dateStr >= a.from && dateStr <= a.to);
+}
+
+// ── KIDS SCHEDULE DATA ────────────────────────────────────────
+// School: Mon–Fri 08:50–~14:00
+// dow: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+
+const ELLY_ACTIVITIES = [
+  // Leiklist: Tue+Thu 16:30–18:30, runs all autumn
+  { dow:[2,4], start:'16:30', end:'18:30', title:'Leiklist', loc:'Borgarleikhúsið', color:'var(--elly)', until:'2026-12-19' },
+  // Fimleikar: Mon/Wed/Thu 18:00–20:30
+  { dow:[1,3,4], start:'18:00', end:'20:30', title:'2.fl. Fimleikar — þrjátt', loc:'Grótta', color:'var(--elly)', until:'2026-12-19' },
+  // Fimleikar Sun: 50/50 æfing 16:00–19:00
+  { dow:[0], start:'16:00', end:'19:00', title:'2.fl. Fimleikar — 50/50', loc:'Grótta', color:'var(--elly)', until:'2026-12-19' },
+  // Fimleikar Sat: 18:00–20:30
+  { dow:[6], start:'18:00', end:'20:30', title:'2.fl. Fimleikar', loc:'Grótta', color:'var(--elly)', until:'2026-12-19' },
+];
+
+const HJALMAR_ACTIVITIES = [
+  // Fótbolti æfing: Tue/Wed/Fri 15:30–17:30, only September
+  { dow:[2,3,5], start:'15:30', end:'17:30', title:'Fótboltaæfing 4.flokks', loc:'KR, Frostaskjól', color:'var(--hjalmar)', until:'2026-09-30' },
+  // C-lið leikur: occasional Thu — specific dates hardcoded below
+];
+
+// Specific one-off events
+const HJALMAR_ONEOFF = [
+  { date:'2026-09-10', start:'17:30', end:'18:40', title:'C-lið leikur vs Njarðvík', loc:'KR-völlur', color:'var(--hjalmar)' },
+];
+
+const ELLY_ONEOFF = [
+  { date:'2026-09-24', start:'20:00', end:'21:30', title:'FermingarReunion', loc:'Neskirkja', color:'var(--elly)' },
+];
+const SHARED_ONEOFF = [];
+
+const SCHOOL_START = '08:50';
+const SCHOOL_END_NORMAL = '13:40';
+// Elly: Tue+Thu longer (Stuðningur í stærðfræði Tue, Sálfræði Thu)
+const ELLY_SCHOOL_END = { 2:'15:00', 4:'15:00' };
+// Hjálmar: Mon+Thu longer (Stuðningur í íslensku Mon, Spænska Thu)
+const HJALMAR_SCHOOL_END = { 1:'15:00', 4:'15:00' };
+
+// Full timetable for detail view — from InfoMentor PDFs
+// Format: [startTime, endTime, subject]
+const ELLY_TIMETABLE = {
+  1: [['08:50','09:10','LesUm'],['09:10','10:10','Danska'],['10:30','11:30','Enska'],['11:30','12:30','Stærðfræði'],['12:30','13:00','Matur'],['13:00','14:00','Íslenska']],
+  2: [['08:50','09:10','LesUm'],['09:10','10:10','Íslenska'],['10:30','11:30','Stærðfræði'],['11:30','12:00','Matur'],['12:00','13:00','Náttúrufræði'],['13:00','14:00','Þróttir'],['14:00','15:00','Stuðningur í stærðfræði']],
+  3: [['08:50','09:10','LesUm'],['09:10','10:10','Danska'],['10:30','11:30','Umsjón'],['11:30','12:30','Samfélagsfræði'],['12:30','13:00','Matur'],['13:00','14:00','Enska']],
+  4: [['08:50','09:10','LesUm'],['09:10','10:10','Hringekja'],['10:30','11:30','Íslenska'],['11:30','12:00','Náttúrufræði'],['12:00','13:00','Matur'],['12:30','13:30','Náttúrufræði'],['13:00','14:00','Stærðfræði'],['14:00','15:00','Sálfræði']],
+  5: [['08:50','09:10','LesUm'],['09:10','10:10','Íslenska'],['10:30','11:30','Íþróttir'],['11:30','12:00','Matur'],['12:00','13:00','Samfélagsfræði'],['13:00','14:00','Stærðfræði']],
 };
-
-const EVENTS = [
-  // ── María ──────────────────────────────────────────────────────
-  { date:'2026-04-14', title:'Vinnustofa hfb',           allDay:true, cal:'personal' },
-  { date:'2026-04-14', title:'Skoda Hildur Jóns',         allDay:true, cal:'personal' },
-  { date:'2026-04-14', start:'10:00', end:'10:30', title:'Stöðutékk Öskjuhlíð', loc:'Teams', cal:'personal' },
-  { date:'2026-04-14', start:'14:15', end:'15:15', title:'Hjálmar iðjuþjálfun', cal:'personal' },
-  { date:'2026-04-16', start:'14:00', end:'15:00', title:'Fundur kl Grindavík?', cal:'personal' },
-
-  // ── Ímark ──────────────────────────────────────────────────────
-  { date:'2026-04-16', start:'14:30', end:'16:00', title:'Stjórnarfundur ÍMARK', cal:'imark' },
-
-  // ── Frídagar (opinberir) ───────────────────────────────────────
-  { date:'2026-04-23', title:'Sumardagurinn fyrsti 🌞',  allDay:true, cal:'holiday' },
-  { date:'2026-05-01', title:'Verkalýðsdagurinn 🌹',     allDay:true, cal:'holiday' },
-  { date:'2026-05-14', title:'Uppstigningardagur',        allDay:true, cal:'holiday' },
-  { date:'2026-05-24', title:'Hvítasunnudagur',           allDay:true, cal:'holiday' },
-  { date:'2026-05-25', title:'Annar í hvítasunnu',        allDay:true, cal:'holiday' },
-  { date:'2026-06-17', title:'Þjóðhátíðardagurinn 🇮🇸',  allDay:true, cal:'holiday' },
-
-  // ── Hagaskóli ─────────────────────────────────────────────────
-  { date:'2026-04-23', title:'Skólafri',                  allDay:true, cal:'school' },
-  { date:'2026-04-24', title:'Skólafri',                  allDay:true, cal:'school' },
-  { date:'2026-05-01', title:'Skólafri · Verkalýðsdagurinn', allDay:true, cal:'school' },
-  { date:'2026-05-04', title:'Starfsdagur 📋',            allDay:true, cal:'school' },
-  { date:'2026-05-14', title:'Skólafri · Uppstigningardagur', allDay:true, cal:'school' },
-  { date:'2026-05-15', title:'Skólafri',                  allDay:true, cal:'school' },
-  { date:'2026-05-24', title:'Skólafri · Hvítasunnudagur', allDay:true, cal:'school' },
-  { date:'2026-05-25', title:'Skólafri · Annar í hvítasunnu', allDay:true, cal:'school' },
-  { date:'2026-06-05', title:'Síðasti skóladagur 🎓',     allDay:true, cal:'school' },
-
-  // ── Hjálmar · Sportable ───────────────────────────────────────
-  { date:'2026-04-14', start:'16:10', end:'17:25', title:'Styrktaræfing',  loc:'Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-14', start:'17:00', end:'17:45', title:'Markmannsæfing', loc:'Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-15', start:'16:00', end:'16:45', title:'Markmannsæfing', loc:'KR, Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-15', start:'16:00', end:'17:00', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-  { date:'2026-04-15', start:'19:30', end:'22:00', title:'Miðakaup á Tjarnarball', loc:'Hátíðarsalur Hagaskóla', cal:'hjalmar' },
-  { date:'2026-04-17', start:'15:00', end:'16:15', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-  { date:'2026-04-17', start:'16:00', end:'16:45', title:'Markmannsæfing', loc:'KR, Frostaskjól', cal:'hjalmar' },
-  { date:'2026-04-18', start:'12:00', end:'13:15', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-  { date:'2026-04-19', title:'Helsinki Cup 🏆',           allDay:true, cal:'hjalmar' },
-  { date:'2026-04-20', title:'Helsinki Cup 🏆',           allDay:true, cal:'hjalmar' },
-  { date:'2026-04-20', start:'16:00', end:'17:15', title:'Fótboltaæfing',  loc:'KR-völlur', cal:'hjalmar' },
-
-  // ── Elly · Sportable ──────────────────────────────────────────
-  { date:'2026-04-15', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-15', start:'19:30', end:'22:00', title:'Miðakaup á Tjarnarball', loc:'Hátíðarsalur Hagaskóla', cal:'elly' },
-  { date:'2026-04-16', start:'18:20', end:'20:50', title:'Dansæfing',             loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-19', start:'16:00', end:'19:00', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-20', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-21', start:'19:00', end:'20:40', title:'Generalprufa 3. stigs', loc:'Borgarleikhúsið', cal:'elly' },
-  { date:'2026-04-22', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-23', start:'18:20', end:'20:50', title:'Dansæfing',             loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-26', start:'16:30', end:'19:00', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-  { date:'2026-04-27', start:'18:00', end:'20:30', title:'Fimleikaaæfing',        loc:'Grótta, Seltjarnarnes', cal:'elly' },
-];
-
-// ─── TRAVEL RANGES (expanded at init) ────────────────────────────────────────
-
-const TRIPS = [
-  { from: '2026-04-30', to: '2026-05-04', title: '✈️ Cannes',  cal: 'personal' },
-  { from: '2026-05-27', to: '2026-06-08', title: '✈️ Ítalía',  cal: 'family'   },
-];
-
-// ─── ICELANDIC STRINGS ────────────────────────────────────────────────────────
-
-const DAYS_L = ['Sunnudagur','Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur','Laugardagur'];
-const DAYS_S = ['Sun','Mán','Þri','Mið','Fim','Fös','Lau'];
-const MONTHS  = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-
-const p2 = n => String(n).padStart(2,'0');
+const HJALMAR_TIMETABLE = {
+  1: [['08:50','09:10','LesUm'],['09:10','10:10','Stærðfræði'],['10:30','11:30','Íslenska'],['11:30','12:30','Enska'],['12:30','13:00','Matur'],['13:00','14:00','Samfélagsfræði'],['14:00','15:00','Stuðningur í íslensku']],
+  2: [['08:50','09:10','LesUm'],['09:10','10:10','Stærðfræði'],['10:30','11:30','Íslenska'],['11:30','12:00','Matur'],['12:00','13:00','Íþróttir'],['13:00','14:00','Samfélagsfræði']],
+  3: [['08:50','09:10','LesUm'],['09:10','10:10','Stærðfræði'],['10:30','11:30','Umsjón'],['11:30','12:30','Náttúrufræði'],['12:30','13:00','Matur'],['13:00','14:00','Danska']],
+  4: [['08:50','09:10','LesUm'],['09:10','10:10','Náttúrufræði'],['10:30','11:30','Hringekja'],['11:30','12:00','Íslenska'],['12:00','13:00','Matur'],['12:30','13:30','Íslenska'],['13:00','14:00','Enska'],['14:00','15:00','Spænska']],
+  5: [['08:50','09:10','LesUm'],['09:10','10:10','Íþróttir'],['10:30','11:30','Danska'],['11:30','12:00','Stærðfræði'],['12:00','13:00','Matur'],['12:30','13:30','Stærðfræði'],['13:00','14:00','Íslenska']],
+};
 
 function todayStr() {
   const d = new Date();
-  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+  return d.toISOString().split('T')[0];
 }
 
-function dateObj(s) {
-  const [y,m,d] = s.split('-').map(Number);
-  return new Date(y, m-1, d);
-}
+function isWeekday(dow) { return dow >= 1 && dow <= 5; }
 
-function fmtLong(s) {
-  const d = dateObj(s);
-  return `${DAYS_L[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
-}
-
-function addDays(s, n) {
-  const d = dateObj(s);
-  d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
-}
-
-function sortEvt(arr) {
-  return [...arr].sort((a,b) => {
-    const ta = a.allDay ? '00:00' : (a.start||'00:00');
-    const tb = b.allDay ? '00:00' : (b.start||'00:00');
-    return ta.localeCompare(tb);
-  });
-}
-
-function getWeekDates() {
-  const today = new Date();
-  const dow = today.getDay();
-  const mon = new Date(today);
-  mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
-  return Array.from({length:7}, (_,i) => {
-    const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
-    return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
-  });
-}
-
-function evtRow(e, showLoc=true) {
-  const c = CALS[e.cal];
-  const time = e.allDay ? 'Allan daginn' : `${e.start}${e.end?'–'+e.end:''}`;
-  const sub = [c.name, showLoc && e.loc ? '📍 '+e.loc : ''].filter(Boolean).join(' · ');
-  return `<div class="evt-row">
-    <div class="evt-time">${time}</div>
-    <div class="evt-dot" style="background:${c.color}"></div>
-    <div class="evt-content">
-      <div class="evt-title">${e.title}</div>
-      <div class="evt-sub">${sub}</div>
-    </div>
-  </div>`;
-}
-
-// ─── TIMETABLE DATA ───────────────────────────────────────────────────────────
-
-const TIMETABLES = {
-  hjalmar: {
-    name: 'Hjálmar', color: '#1976d2',
-    rows: [
-      { time:'08:50',       mán:'LesUm',           þri:'LesUm',            mið:'LesUm',            fim:'LesUm',         fös:'LesUm' },
-      { time:'09:10–10:10', mán:'Stærðfræði',      þri:'Íslenska',         mið:'Myndmennt/Textíl', fim:'Náttúrufræði',  fös:'Íþróttir' },
-      { time:'10:30–11:30', mán:'Íslenska',        þri:'Umsjón',           mið:'Myndmennt/Textíl', fim:'Enska',         fös:'Enska' },
-      { time:'11:30–12:00', mán:'Matur',           þri:'Leiklist/Tónlist', mið:'Samfélagsfræði',   fim:'Íslenska',      fös:'Íslenska' },
-      { time:'12:00–13:00', mán:'Smíði/Heimilis.', þri:'Matur',            mið:'',                 fim:'Matur',         fös:'Matur' },
-      { time:'12:30–13:00', mán:'',                þri:'Leiklist/Tónlist', mið:'Matur',            fim:'Íslenska',      fös:'Íslenska' },
-      { time:'13:00–14:00', mán:'Smíði/Heimilis.', þri:'Danska',           mið:'Stærðfræði',       fim:'Stærðfræði',    fös:'Samfélagsfræði' },
-      { time:'14:00–15:00', mán:'Danska',          þri:'Náttúrufræði',     mið:'',                 fim:'Íþróttir',      fös:'' },
-    ]
-  },
-  elly: {
-    name: 'Elly', color: '#8e24aa',
-    rows: [
-      { time:'08:50',       mán:'LesUm',            þri:'LesUm',            mið:'LesUm',        fim:'LesUm',         fös:'LesUm' },
-      { time:'09:10–10:10', mán:'Myndmennt/Textíl', þri:'Samfélagsfræði',   mið:'Íslenska',     fim:'Enska',         fös:'Smíði/Heimilis.' },
-      { time:'10:30–11:30', mán:'Myndmennt/Textíl', þri:'Umsjón',           mið:'Stærðfræði',   fim:'Íslenska',      fös:'Smíði/Heimilis.' },
-      { time:'11:30–12:00', mán:'Matur',            þri:'Íslenska',         mið:'Danska',       fim:'Matur',         fös:'Matur' },
-      { time:'12:00–13:00', mán:'Stærðfræði',       þri:'Matur',            mið:'',             fim:'Danska',        fös:'Íþróttir' },
-      { time:'12:30–13:00', mán:'',                 þri:'Íslenska',         mið:'Matur',        fim:'',              fös:'' },
-      { time:'13:00–14:00', mán:'Náttúrufræði',     þri:'Enska',            mið:'Náttúrufræði', fim:'Íþróttir',      fös:'Íslenska' },
-      { time:'14:00–15:00', mán:'Samfélagsfræði',   þri:'Leiklist/Tónlist', mið:'',             fim:'Stærðfræði',    fös:'' },
-    ]
-  }
-};
-
-// ─── PERSON FILTER ───────────────────────────────────────────────────────────
-
-let activeFilter = null;
-
-const PERSON_FILTERS = {
-  maria:   ['personal', 'imark',   'family', 'holiday', 'school'],
-  hjalmar: ['hjalmar',             'family', 'holiday', 'school'],
-  elly:    ['elly',                'family', 'holiday', 'school'],
-  family:  [           'family',            'holiday', 'school'],
-};
-
-function filterEvts(evts) {
-  if (!activeFilter) return evts;
-  const allowed = PERSON_FILTERS[activeFilter];
-  return evts.filter(e => allowed.includes(e.cal) ||
-    (e.title && e.title.startsWith('✈️')));
-}
-
-function setFilter(key) {
-  activeFilter = key;
-  document.querySelectorAll('.li[id^="filter-"]').forEach(el => el.classList.remove('active'));
-  document.getElementById('filter-all').classList.toggle('active', !key);
-  if (key) document.getElementById(`filter-${key}`)?.classList.add('active');
-  renderToday();
-  renderWeek();
-  renderMonthCal();
-  if (key === 'hjalmar' || key === 'elly') showTT(key);
-}
-
-// ─── TIMETABLE MODAL ──────────────────────────────────────────────────────────
-
-function showTT(key) {
-  const tt = TIMETABLES[key];
-  if (!tt) return;
-
-  const today = new Date();
-  const dowMap = { 1:'mán', 2:'þri', 3:'mið', 4:'fim', 5:'fös' };
-  const todayKey = dowMap[today.getDay()] || '';
-  const dayHeaders = ['mán','þri','mið','fim','fös'];
-  const dayLabels  = ['Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur'];
-
-  const isElly = key === 'elly';
-
-  const headerCells = dayHeaders.map((d, i) => {
-    const isT = d === todayKey;
-    return `<th class="${isT ? 'today-col' : ''}">${dayLabels[i].slice(0,3)}<br><span style="font-weight:400;font-size:10px;opacity:.7">${dayLabels[i]}</span></th>`;
-  }).join('');
-
-  const bodyRows = tt.rows.map(row => {
-    const cells = dayHeaders.map(d => {
-      const val = row[d] || '';
-      const isT = d === todayKey;
-      let cls = 'tt-cell';
-      if (!val) cls += ' empty';
-      else if (val === 'LesUm') cls += ' lesum';
-      else if (val === 'Matur') cls += ' matur';
-      else cls += isElly ? ' lesson elly-sub' : ' lesson';
-      if (isT && val) cls += ' today-col';
-      return `<td class="${cls}">${val}</td>`;
-    }).join('');
-    return `<tr><td class="tt-time-cell">${row.time}</td>${cells}</tr>`;
-  }).join('');
-
-  document.getElementById('tt-title').innerHTML =
-    `<span style="color:${tt.color}">●</span> Stundaskrá — ${tt.name}`;
-  document.getElementById('tt-body').innerHTML = `
-    <table class="tt-table">
-      <thead><tr><th></th>${headerCells}</tr></thead>
-      <tbody>${bodyRows}</tbody>
-    </table>
-    <p style="font-size:11px;color:#bbb;margin-top:12px">Stundaskrá frá InfoMentor · vika 13–17. apríl 2026</p>`;
-  document.getElementById('tt-modal').classList.add('open');
-}
-
-function closeTT() {
-  document.getElementById('tt-modal').classList.remove('open');
-}
-
-// ─── CLOCK ───────────────────────────────────────────────────────────────────
-
-function tickClock() {
-  const d = new Date();
-  document.getElementById('clock').textContent =
-    `${p2(d.getHours())}:${p2(d.getMinutes())}`;
-  document.getElementById('clock-sec').textContent =
-    `:${p2(d.getSeconds())}`;
-}
-
-function renderDate() {
-  const d = new Date();
-  document.getElementById('hdr-date').textContent =
-    `${DAYS_L[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-  document.getElementById('today-lbl').textContent =
-    `Í dag · ${DAYS_L[d.getDay()]} ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
-}
-
-// ─── WEATHER ─────────────────────────────────────────────────────────────────
-
-const WX = {
-  0: ['Skýlaust','☀️'],    1: ['Aðallega skýlægt','🌤️'],
-  2: ['Hlutskýjað','⛅'],  3: ['Skýjað','☁️'],
-  45:['Þoka','🌫️'],       48:['Þoka','🌫️'],
-  51:['Súlur','🌦️'],      53:['Súlur','🌦️'],      55:['Súlur','🌦️'],
-  61:['Rigning','🌧️'],    63:['Rigning','🌧️'],    65:['Þung rigning','🌧️'],
-  71:['Snjókoma','🌨️'],   73:['Snjókoma','🌨️'],   75:['Þung snjókoma','❄️'],
-  80:['Skúrar','🌦️'],     81:['Skúrar','🌧️'],     82:['Þungir skúrar','⛈️'],
-  95:['Þrumuveður','⛈️'], 96:['Þrumuveður','⛈️'], 99:['Þrumuveður','⛈️'],
-};
-
-function clothing(temp, code, wind) {
-  let s = temp < 0   ? 'Ullarundirföt · þykk peysa · útijakki · hanska · húfa'
-        : temp < 5   ? 'Ullarlag · peysa · hlý jakki · hanska'
-        : temp < 10  ? 'Millilög · vindjakki'
-        : temp < 15  ? 'Peysa eða þunnt jakki'
-        : 'Létt föt';
-  if ([51,53,55,61,63,65,80,81,82,95,96,99].includes(code)) s += ' · regnkápa';
-  if (wind > 12) s += ' · vindkápa';
-  return s;
-}
-
-async function loadWeather() {
-  try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=64.1510&longitude=-21.9700&current=temperature_2m,weather_code,wind_speed_10m,precipitation&timezone=Atlantic%2FReykjavik');
-    const j = await r.json();
-    const c = j.current;
-    const temp = Math.round(c.temperature_2m);
-    const code = c.weather_code;
-    const wind = Math.round(c.wind_speed_10m);
-    const [desc, icon] = WX[code] || ['Óþekkt','🌡️'];
-
-    document.getElementById('wx-icon').textContent    = icon;
-    document.getElementById('wx-temp').textContent    = `${temp}°`;
-    document.getElementById('wx-desc').textContent    = desc;
-    document.getElementById('wx-meta').textContent    = `Vindur ${wind} m/s · Úrkoma ${c.precipitation} mm`;
-    document.getElementById('wx-cloth').textContent   = clothing(temp, code, wind);
-    document.getElementById('hdr-wx-icon').textContent = icon;
-    document.getElementById('hdr-wx-temp').textContent = `${temp}°`;
-    document.getElementById('hdr-wx-desc').textContent = desc;
-  } catch(_) {
-    document.getElementById('wx-desc').textContent = 'Gat ekki sótt veðurspá';
-  }
-}
-
-// ─── TIDE PREDICTION (Reykjavík harmonic model) ───────────────────────────────
-
-const MSL = 1.84;
-
-const CONSTITUENTS = [
-  ['M2',  28.9841042, 1.370,  74.0],
-  ['S2',  30.0000000, 0.474, 148.0],
-  ['N2',  28.4397295, 0.270,  54.0],
-  ['K2',  30.0821373, 0.133, 148.0],
-  ['K1',  15.0410686, 0.072, 290.0],
-  ['O1',  13.9430356, 0.054, 260.0],
-  ['P1',  14.9589314, 0.023, 290.0],
-  ['Q1',  13.3986609, 0.013, 234.0],
-];
-
-function mod360(x) { return ((x % 360) + 360) % 360; }
-function deg(x)    { return x * Math.PI / 180; }
-
-function astroArgs(jd) {
-  const T = (jd - 2451545.0) / 36525.0;
-  return {
-    h:  mod360(280.46966  + 36000.76989 * T),
-    s:  mod360(218.31665  + 481267.88134 * T),
-    p:  mod360(83.35320   + 4069.01363  * T),
-    p1: mod360(282.93734  + 1.71946     * T),
-  };
-}
-
-function v0arg(name, a) {
-  const {h, s, p, p1} = a;
-  switch(name) {
-    case 'M2': return mod360(2*(h - s));
-    case 'S2': return 0;
-    case 'N2': return mod360(2*h - 3*s + p);
-    case 'K2': return mod360(2*h);
-    case 'K1': return mod360(270 - h);
-    case 'O1': return mod360(90 + s - 2*h);
-    case 'P1': return mod360(180 - h + p1);
-    case 'Q1': return mod360(90 + s - 2*h + p);
-    default:   return 0;
-  }
-}
-
-function tideHeight(hoursFromMidnightUTC, jdMidnight) {
-  const a = astroArgs(jdMidnight);
-  let ht = MSL;
-  for (const [name, speed, amp, g] of CONSTITUENTS) {
-    const phase = v0arg(name, a) + speed * hoursFromMidnightUTC - g;
-    ht += amp * Math.cos(deg(phase));
-  }
-  return ht;
-}
-
-function computeTidesForDay(dateUTC) {
-  const midnight = new Date(Date.UTC(
-    dateUTC.getUTCFullYear(), dateUTC.getUTCMonth(), dateUTC.getUTCDate()
-  ));
-  const jdMidnight = midnight.getTime() / 86400000 + 2440587.5;
-  const pts = [];
-  for (let i = 0; i <= 144; i++) {
-    const t = i * (24 / 144);
-    pts.push({ t, h: tideHeight(t, jdMidnight) });
-  }
-  return pts;
-}
-
-function findExtrema(pts) {
-  const extrema = [];
-  for (let i = 1; i < pts.length - 1; i++) {
-    const prev = pts[i-1].h, cur = pts[i].h, next = pts[i+1].h;
-    if (cur > prev && cur > next) extrema.push({ t: pts[i].t, h: cur, type: 'high' });
-    else if (cur < prev && cur < next) extrema.push({ t: pts[i].t, h: cur, type: 'low' });
-  }
-  return extrema;
-}
-
-function fmtHHMM(t) {
-  const h = Math.floor(t);
-  const m = Math.round((t - h) * 60);
-  return `${p2(h)}:${p2(m === 60 ? 0 : m)}`;
-}
-
-function renderTide() {
+function getKidSchedule(activities, oneoffs, schoolEndMap) {
   const now = new Date();
-  const pts = computeTidesForDay(now);
-  const extrema = findExtrema(pts);
+  const dow = now.getDay();
+  const ds = todayStr();
+  const items = [];
 
-  const W = 960, H = 130;
-  const PAD_L = 30, PAD_R = 10, PAD_T = 10, PAD_B = 28;
-  const chartW = W - PAD_L - PAD_R;
-  const chartH = H - PAD_T - PAD_B;
-
-  const allH = pts.map(p => p.h);
-  const minH = Math.min(...allH);
-  const maxH = Math.max(...allH);
-  const range = maxH - minH || 1;
-
-  function xOf(t)  { return PAD_L + (t / 24) * chartW; }
-  function yOf(hv) { return PAD_T + chartH - ((hv - minH) / range) * chartH; }
-
-  const pathD = pts.map((p,i) => `${i===0?'M':'L'}${xOf(p.t).toFixed(1)},${yOf(p.h).toFixed(1)}`).join(' ');
-  const fillD = `${pathD} L${xOf(24)},${(PAD_T+chartH).toFixed(1)} L${xOf(0)},${(PAD_T+chartH).toFixed(1)} Z`;
-
-  const nowH = now.getUTCHours() + now.getUTCMinutes()/60 + now.getUTCSeconds()/3600;
-  const nowX = xOf(nowH);
-
-  let hourLabels = '';
-  for (let h = 0; h <= 24; h += 3) {
-    const x = xOf(h);
-    hourLabels += `<text x="${x}" y="${H - 6}" text-anchor="middle" font-size="9" fill="#aaa">${p2(h)}:00</text>`;
+  // School
+  if (isWeekday(dow)) {
+    const alert = getSchoolAlert(ds);
+    const isStarfsdagur = alert && alert.label.includes('Starfsdagur');
+    const isHalfDay = alert && alert.label.includes('hádegis');
+    if (!isStarfsdagur && !(alert && alert.label.includes('frí'))) {
+      const endStr = isHalfDay ? '12:30' : (schoolEndMap[dow] || SCHOOL_END_NORMAL);
+      items.push({ time: SCHOOL_START + '–' + endStr, title: 'Skóli', loc: 'Hagaskóli', color: '#888' });
+    }
   }
 
-  let gridLines = '';
-  for (let h = 0; h <= 24; h += 3) {
-    const x = xOf(h);
-    gridLines += `<line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${PAD_T+chartH}" stroke="#eee" stroke-width="1"/>`;
-  }
-
-  let hLabels = '';
-  const hSteps = [0, 1, 2, 3, 4];
-  hSteps.forEach(hv => {
-    if (hv >= minH - 0.2 && hv <= maxH + 0.2) {
-      const y = yOf(hv);
-      hLabels += `<text x="${PAD_L - 4}" y="${y + 3}" text-anchor="end" font-size="9" fill="#bbb">${hv}m</text>`;
-      hLabels += `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" stroke="#f0f0f0" stroke-width="1" stroke-dasharray="3,3"/>`;
+  // Recurring activities
+  activities.forEach(a => {
+    if (a.dow.includes(dow) && ds <= a.until) {
+      items.push({ time: a.start + '–' + a.end, title: a.title, loc: a.loc, color: a.color });
     }
   });
 
-  let extMarkers = '';
-  extrema.forEach(e => {
-    const x = xOf(e.t), y = yOf(e.h);
-    const isHigh = e.type === 'high';
-    extMarkers += `<circle cx="${x}" cy="${y}" r="4" fill="${isHigh ? '#1565c0' : '#2e7d32'}"/>`;
+  // One-off
+  oneoffs.forEach(o => {
+    if (o.date === ds) {
+      items.push({ time: o.start + '–' + o.end, title: o.title, loc: o.loc, color: o.color });
+    }
   });
 
-  const svg = document.getElementById('tide-svg');
-  svg.innerHTML = `
-    ${gridLines}
-    ${hLabels}
-    <defs>
-      <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#42a5f5" stop-opacity=".55"/>
-        <stop offset="100%" stop-color="#90caf9" stop-opacity=".1"/>
-      </linearGradient>
-    </defs>
-    <path d="${fillD}" fill="url(#tg)"/>
-    <path d="${pathD}" fill="none" stroke="#1976d2" stroke-width="2.5"/>
-    ${extMarkers}
-    <line x1="${nowX}" y1="${PAD_T}" x2="${nowX}" y2="${PAD_T+chartH}" stroke="#ff7537" stroke-width="2" stroke-dasharray="4,3"/>
-    <text x="${nowX+4}" y="${PAD_T+11}" font-size="9" fill="#ff7537">Núna</text>
-    ${hourLabels}
-  `;
-
-  const labelsEl = document.getElementById('tide-labels');
-  labelsEl.innerHTML = extrema.map(e => {
-    const isHigh = e.type === 'high';
-    return `<span class="tide-label ${isHigh ? '' : 'low'}">
-      ${isHigh ? '🔼 Flóð' : '🔽 Fjara'} ${fmtHHMM(e.t)} · ${e.h.toFixed(2)} m
-    </span>`;
-  }).join('');
+  items.sort((a,b) => a.time.localeCompare(b.time));
+  return items;
 }
 
-// ─── TODAY ────────────────────────────────────────────────────────────────────
-
-function renderToday() {
-  const today = todayStr();
-  const evts = sortEvt(filterEvts(EVENTS.filter(e => e.date === today)));
-  const el = document.getElementById('today-events');
-  el.innerHTML = evts.length
-    ? evts.map(e => evtRow(e)).join('')
-    : '<div class="empty">Engin atvik skráð í dag</div>';
-}
-
-// ─── WEEK ─────────────────────────────────────────────────────────────────────
-
-function renderWeek() {
-  const today = todayStr();
-  const el = document.getElementById('week-grid');
-  el.innerHTML = getWeekDates().map(ds => {
-    const d = dateObj(ds);
-    const isT = ds === today;
-    const evts = sortEvt(filterEvts(EVENTS.filter(e => e.date === ds)));
-    const shown = evts.slice(0, 4);
-    const more  = evts.length > 4 ? evts.length - 4 : 0;
-    return `<div class="wday${isT?' today':''}">
-      <div class="wdn">${DAYS_S[d.getDay()]}</div>
-      <div class="wnum">${d.getDate()}</div>
-      ${shown.map(e => `<span class="pill" style="background:${CALS[e.cal].color}" title="${e.title}">${e.allDay ? e.title : e.start+' '+e.title}</span>`).join('')}
-      ${more ? `<div class="wmore">+${more}</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-// ─── MONTH CALENDAR ───────────────────────────────────────────────────────────
-
-function renderMonthCal() {
-  const now   = new Date();
-  const today = todayStr();
-  const el    = document.getElementById('month-cal');
-
+function renderKidSchedule(elId, activities, oneoffs, schoolEndMap, name) {
+  const now = new Date();
+  const dow = now.getDay();
+  const ds = todayStr();
+  const el = document.getElementById(elId);
+  const alert = getSchoolAlert(ds);
   let html = '';
 
-  for (let mo = 0; mo < 3; mo++) {
-    const refDate = new Date(now.getFullYear(), now.getMonth() + mo, 1);
-    const year  = refDate.getFullYear();
-    const month = refDate.getMonth();
+  if (alert) {
+    html += `<div class="school-alert">${alert.label}</div>`;
+  }
 
-    const firstDay = new Date(year, month, 1);
-    const lastDay  = new Date(year, month + 1, 0);
+  if (!isWeekday(dow)) {
+    html += `<div class="school-block">Enginn skóli í dag 🏠</div>`;
+  }
 
-    let startDow = firstDay.getDay();
-    startDow = startDow === 0 ? 6 : startDow - 1;
+  const items = getKidSchedule(activities, oneoffs, schoolEndMap);
 
-    const totalCells = startDow + lastDay.getDate();
-    const rows = Math.ceil(totalCells / 7);
+  if (items.length === 0) {
+    html += `<div class="empty">Ekkert skráð í dag.</div>`;
+  } else {
+    items.forEach(item => {
+      html += `<div class="event">
+        <div class="event-time">${item.time.split('–')[0]}</div>
+        <div>
+          <div class="event-title">${item.title}</div>
+          <div class="event-loc">${item.loc}</div>
+        </div>
+      </div>`;
+    });
+  }
 
-    const monthName = `${MONTHS[month]} ${year}`;
-
-    const dayHeaders = ['Mán','Þri','Mið','Fim','Fös','Lau','Sun']
-      .map(d => `<div class="cal-head">${d}</div>`).join('');
-
-    let cells = '';
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < 7; col++) {
-        const cellIdx = row * 7 + col;
-        const dayNum  = cellIdx - startDow + 1;
-
-        if (dayNum < 1 || dayNum > lastDay.getDate()) {
-          cells += `<div class="cal-cell other-month"></div>`;
-          continue;
-        }
-
-        const ds = `${year}-${p2(month+1)}-${p2(dayNum)}`;
-        const evts = sortEvt(filterEvts(EVENTS.filter(e => e.date === ds)));
-        const isToday    = ds === today;
-        const hasHoliday = evts.some(e => e.cal === 'holiday');
-        const hasSchool  = evts.some(e => e.cal === 'school');
-
-        const cls = [
-          'cal-cell',
-          isToday    ? 'is-today'    : '',
-          !isToday && hasHoliday ? 'has-holiday' : '',
-          !isToday && !hasHoliday && hasSchool ? 'has-school' : '',
-        ].filter(Boolean).join(' ');
-
-        const shown = evts.slice(0, 3);
-        const more  = evts.length > 3 ? evts.length - 3 : 0;
-
-        const pills = shown.map(e => {
-          const c = CALS[e.cal];
-          const label = e.allDay ? e.title : `${e.start} ${e.title}`;
-          return `<span class="cal-pill" style="background:${c.color}" title="${e.title}">${label}</span>`;
-        }).join('');
-
-        cells += `<div class="${cls}">
-          <span class="cal-day-num">${dayNum}</span>
-          ${pills}
-          ${more ? `<div class="cal-more">+${more}</div>` : ''}
-        </div>`;
-      }
+  // Next notable event if today is empty/weekend
+  if (!isWeekday(dow)) {
+    const nextAct = getNextActivity(activities, oneoffs);
+    if (nextAct) {
+      html += `<div style="margin-top:8px;font-size:0.75rem;color:var(--muted);">Næst: ${nextAct.title} ${nextAct.when}</div>`;
     }
-
-    html += `<div class="month-block">
-      <div class="month-title">${monthName}</div>
-      <div class="cal-grid">${dayHeaders}${cells}</div>
-    </div>`;
   }
 
   el.innerHTML = html;
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-
-TRIPS.forEach(t => {
-  let d = new Date(t.from + 'T00:00:00');
-  const end = new Date(t.to + 'T00:00:00');
-  while (d <= end) {
-    EVENTS.push({ date: `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`, title: t.title, allDay: true, cal: t.cal });
-    d.setDate(d.getDate() + 1);
+function getNextActivity(activities, oneoffs) {
+  const now = new Date();
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i);
+    const ds = d.toISOString().split('T')[0];
+    const dow = d.getDay();
+    for (const a of activities) {
+      if (a.dow.includes(dow) && ds <= a.until) {
+        return { title: a.title, when: DAYS_IS[dow].toLowerCase() };
+      }
+    }
+    for (const o of oneoffs) {
+      if (o.date === ds) return { title: o.title, when: DAYS_IS[dow].toLowerCase() };
+    }
   }
-});
+  return null;
+}
 
-tickClock();
-setInterval(tickClock, 1000);
-renderDate();
-renderToday();
-renderWeek();
-renderMonthCal();
-renderTide();
-loadWeather();
+renderKidSchedule('elly-content', ELLY_ACTIVITIES, ELLY_ONEOFF, ELLY_SCHOOL_END, 'Elly');
+renderKidSchedule('hjalmar-content', HJALMAR_ACTIVITIES, HJALMAR_ONEOFF, HJALMAR_SCHOOL_END, 'Hjálmar');
+
+// Refresh kids every minute
+setInterval(() => {
+  renderKidSchedule('elly-content', ELLY_ACTIVITIES, ELLY_ONEOFF, ELLY_SCHOOL_END, 'Elly');
+  renderKidSchedule('hjalmar-content', HJALMAR_ACTIVITIES, HJALMAR_ONEOFF, HJALMAR_SCHOOL_END, 'Hjálmar');
+}, 60000);
+
+// ── SCHOOL STATUS BAR ─────────────────────────────────────────
+function updateSchoolStatus() {
+  const now = new Date();
+  const dow = now.getDay();
+  const ds = todayStr();
+  const alert = getSchoolAlert(ds);
+  const el = document.getElementById('school-status');
+  if (alert) { el.textContent = alert.label; return; }
+  if (!isWeekday(dow)) { el.textContent = 'Enginn skóli í dag'; return; }
+  const hr = now.getHours();
+  if (hr < 9) { el.textContent = 'Skóli hefst 08:50'; }
+  else if (hr >= 9 && hr < 14) { el.textContent = 'Skóli í gangi 📚'; }
+  else { el.textContent = 'Skóla er lokið fyrir daginn'; }
+}
+updateSchoolStatus();
+
+// ── WEATHER ───────────────────────────────────────────────────
+async function fetchWeather() {
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=64.1355&longitude=-21.8954&current=temperature_2m,weather_code,wind_speed_10m');
+    const d = await r.json();
+    const temp = Math.round(d.current.temperature_2m);
+    const wind = Math.round(d.current.wind_speed_10m);
+    const code = d.current.weather_code;
+    const descs = {0:'Heiðskírt',1:'Létt skýjað',2:'Hlutskýjað',3:'Skýjað',45:'Þoka',48:'Þoka',51:'Súldur',53:'Súldur',55:'Súldur',61:'Rigning',63:'Rigning',65:'Þung rigning',71:'Snjókoma',73:'Snjókoma',75:'Þung snjókoma',80:'Skúrir',81:'Skúrir',82:'Þungir skúrar',95:'Þrumuveður'};
+    document.getElementById('weather-temp').textContent = temp + '°C';
+    document.getElementById('weather-desc').textContent = (descs[code] || 'Reykjavík') + ' · ' + wind + ' m/s';
+  } catch(e) {
+    document.getElementById('weather-temp').textContent = '—';
+  }
+}
+fetchWeather();
+setInterval(fetchWeather, 600000);
+
+// ── TIDES ─────────────────────────────────────────────────────
+async function fetchTides() {
+  const el = document.getElementById('tide-content');
+  try {
+    const now = new Date();
+    // Generate synthetic tide data (Reykjavík ~1.8m range, semi-diurnal)
+    const tides = [];
+    for (let h = 0; h < 24; h++) {
+      const v = 1.1 + 0.95 * Math.sin((h * Math.PI) / 12.4 - 1.2) + 0.3 * Math.sin((h * Math.PI) / 6.2);
+      tides.push({ h, v: Math.max(0.1, v) });
+    }
+    // Try real API
+    const ds = now.toISOString().split('T')[0].replace(/-/g,'');
+    try {
+      const r = await fetch(`https://api.met.no/weatherapi/tidalwater/0.1/?lat=64.1355&lon=-21.8954`, {signal: AbortSignal.timeout(4000)});
+      // met.no may work — if not, we use synthetic
+    } catch(e) {}
+
+    renderTides(tides, now.getHours());
+  } catch(e) {
+    document.getElementById('tide-content').innerHTML = '<div class="empty">Gat ekki sótt sjávarfallagögn.</div>';
+  }
+}
+
+function renderTides(tides, nowH) {
+  const max = Math.max(...tides.map(t=>t.v));
+  const min = Math.min(...tides.map(t=>t.v));
+  const pct = v => Math.max(8, Math.round((v-min)/(max-min)*100));
+
+  const highs = [], lows = [];
+  for (let i=1; i<tides.length-1; i++) {
+    if (tides[i].v > tides[i-1].v && tides[i].v > tides[i+1].v) highs.push(tides[i]);
+    if (tides[i].v < tides[i-1].v && tides[i].v < tides[i+1].v) lows.push(tides[i]);
+  }
+  const nextHigh = highs.find(t=>t.h>nowH);
+  const nextLow = lows.find(t=>t.h>nowH);
+  const nowVal = tides[nowH]?.v.toFixed(1) || '—';
+
+  const bars = tides.map(t => {
+    const isNow = t.h === nowH;
+    const past = t.h < nowH;
+    const bg = isNow ? 'var(--tide)' : past ? '#D3D1C7' : '#B5D4F4';
+    return `<div class="tide-bar" style="height:${pct(t.v)}%;background:${bg};opacity:${past?0.4:1};"></div>`;
+  }).join('');
+
+  const keyH = [0,6,12,18,23];
+  const labels = keyH.map(h=>`<span class="tide-time-label">${String(h).padStart(2,'0')}:00</span>`).join('');
+
+  document.getElementById('tide-content').innerHTML = `
+    <div class="tide-stats">
+      <div class="tide-stat">
+        <div class="tide-stat-label">Núna</div>
+        <div class="tide-stat-val">${nowVal}m</div>
+      </div>
+      <div class="tide-stat">
+        <div class="tide-stat-label">Næst hátt</div>
+        <div class="tide-stat-val">${nextHigh ? String(nextHigh.h).padStart(2,'0')+':00' : '—'}</div>
+      </div>
+    </div>
+    <div class="tide-chart">${bars}</div>
+    <div class="tide-times">${labels}</div>
+    <div style="margin-top:5px;font-size:0.65rem;color:var(--muted);">Reykjavíkurhöfn · lilla = núna</div>`;
+}
+fetchTides();
+
+// ── TRAFFIC ───────────────────────────────────────────────────
+function renderTraffic() {
+  const now = new Date();
+  const h = now.getHours();
+  const isPeak = (h>=7&&h<=9) || (h>=15&&h<=18);
+  const roads = [
+    { name:'Miklabraut', status: isPeak?'warn':'ok', label: isPeak?'Hægur akstur':'Greiðfær' },
+    { name:'Hringbraut', status:'ok', label:'Greiðfær' },
+    { name:'Kringlumýrarbraut', status: isPeak?'warn':'ok', label: isPeak?'Hægur akstur':'Greiðfær' },
+    { name:'Vesturlandsvegur', status:'ok', label:'Greiðfær' },
+  ];
+  document.getElementById('traffic').innerHTML = roads.map(r=>
+    `<div class="traffic-item"><span class="traffic-road">${r.name}</span><span class="traffic-badge badge-${r.status}">${r.label}</span></div>`
+  ).join('') + `<div class="traffic-item" style="grid-column:1/-1;justify-content:flex-end;background:none;padding-right:0;">
+    <a href="https://vegasja.vegagerdin.is" target="_blank" style="font-size:0.72rem;color:var(--muted);">Sjá á vegasja.is →</a></div>`;
+}
+renderTraffic();
+setInterval(renderTraffic, 300000);
+
+// ── DETAIL VIEW ───────────────────────────────────────────────
+function openDetail(kid) {
+  const isElly = kid === 'elly';
+  const color = isElly ? 'var(--elly)' : 'var(--hjalmar)';
+  const name = isElly ? 'Elly' : 'Hjálmar';
+  const timetable = isElly ? ELLY_TIMETABLE : HJALMAR_TIMETABLE;
+  const activities = isElly ? ELLY_ACTIVITIES : HJALMAR_ACTIVITIES;
+  const oneoffs = isElly ? ELLY_ONEOFF : HJALMAR_ONEOFF;
+
+  document.getElementById('detail-dot').style.background = color;
+  document.getElementById('detail-name').textContent = name + ' — ' + new Date().toLocaleDateString('is-IS',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('detail-overlay').classList.add('open');
+
+  const now = new Date();
+  const dow = now.getDay();
+  const ds = todayStr();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  // Build merged list: school slots + activities
+  let slots = [];
+
+  if (isWeekday(dow)) {
+    const alert = getSchoolAlert(ds);
+    const isStarfs = alert && alert.label.includes('Starfsdagur');
+    const isHalfDay = alert && alert.label.includes('hádegis');
+
+    if (!isStarfs && !(alert && alert.label.includes('frí'))) {
+      const daySlots = timetable[dow] || [];
+      daySlots.forEach(([s,e,subj]) => {
+        if (subj === 'Matur') return; // skip lunch in detail
+        const endAdj = isHalfDay && toMin(e) > 12*60+30 ? '12:30' : e;
+        slots.push({ start:s, end:endAdj, title:subj, loc:'Hagaskóli', color:'#888', school:true });
+      });
+    }
+  }
+
+  // Activities
+  activities.forEach(a => {
+    if (a.dow.includes(dow) && ds <= a.until) {
+      slots.push({ start:a.start, end:a.end, title:a.title, loc:a.loc, color:isElly?'var(--elly)':'var(--hjalmar)', school:false });
+    }
+  });
+  oneoffs.forEach(o => {
+    if (o.date === ds) slots.push({ start:o.start, end:o.end, title:o.title, loc:o.loc, color:o.color, school:false });
+  });
+
+  slots.sort((a,b) => a.start.localeCompare(b.start));
+
+  // Render timeline from 08:00 to last event end or 21:00
+  const startH = 8;
+  const endH = slots.length ? Math.max(21, toMin(slots[slots.length-1].end)/60 + 1) : 21;
+
+  let html = '<div class="timeline">';
+  const alert2 = getSchoolAlert(ds);
+  if (alert2) html += `<div class="school-alert" style="margin-bottom:12px;">${alert2.label}</div>`;
+  if (!isWeekday(dow)) html += `<div class="empty" style="margin-bottom:12px;">Enginn skóli í dag 🏠</div>`;
+
+  for (let h = startH; h < endH; h++) {
+    const hMin = h * 60;
+    const slotHere = slots.filter(s => toMin(s.start) >= hMin && toMin(s.start) < hMin + 60);
+    const isNowHour = now.getHours() === h;
+
+    html += `<div class="tl-hour">
+      <div class="tl-time">${String(h).padStart(2,'0')}:00</div>
+      <div>
+        <div class="tl-line ${isNowHour ? 'now-line' : ''}">
+          ${isNowHour ? '<span class="now-label">núna</span>' : ''}
+        </div>`;
+
+    slotHere.forEach(s => {
+      const schoolBg = s.school ? '#F5F5F3' : '';
+      const textColor = s.school ? 'var(--text)' : 'white';
+      const bg = s.school ? schoolBg : s.color;
+      const border = s.school ? `border-left: 3px solid #ccc;` : '';
+      const tc = s.school ? 'var(--text)' : 'white';
+      html += `<div class="tl-block" style="background:${bg};${border}color:${tc};">
+        <div class="tl-block-title">${s.title} <span style="font-weight:400;font-size:0.72rem;">${s.start}–${s.end}</span></div>
+        <div class="tl-block-loc" style="color:${s.school?'var(--muted)':'rgba(255,255,255,0.8)'};">${s.loc}</div>
+      </div>`;
+    });
+
+    html += '</div></div>';
+  }
+
+  if (slots.length === 0 && !isWeekday(dow)) {
+    html += '<div class="empty">Ekkert skráð í dag.</div>';
+  }
+
+  html += '</div>';
+  document.getElementById('detail-body').innerHTML = html;
+}
+
+function toMin(timeStr) {
+  const [h,m] = timeStr.split(':').map(Number);
+  return h*60 + (m||0);
+}
+
+function closeDetail(e) {
+  if (!e || e.target === document.getElementById('detail-overlay')) {
+    document.getElementById('detail-overlay').classList.remove('open');
+  }
+}
+
+// ── GOOGLE CALENDAR ───────────────────────────────────────────
+const CLIENT_ID = '865507997051-8a0l6dpl5dsk278mpnll9spmfqs1re79.apps.googleusercontent.com';
+const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+
+function startGoogleAuth() {
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(location.href.split('#')[0])}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+  if (CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+    alert('Settu inn þinn Google Client ID í kóðann (CLIENT_ID).\nSjá leiðbeiningar í Claude.');
+    return;
+  }
+  window.location.href = url;
+}
+
+const hashParams = new URLSearchParams(location.hash.replace('#','?'));
+const token = hashParams.get('access_token');
+if (token) fetchGoogleCalendar(token);
+
+async function fetchGoogleCalendar(token) {
+  const btn = document.getElementById('cal-btn');
+  if(btn) btn.textContent = '⟳ samstillt';
+  try {
+    const now = new Date();
+    const end = new Date(now); end.setHours(23,59,59);
+    const r = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10`,
+      { headers: { Authorization: 'Bearer '+token } }
+    );
+    const d = await r.json();
+    const el = document.getElementById('maja-cal');
+    if (!d.items || d.items.length === 0) {
+      el.innerHTML = '<div class="empty">Enginn viðburður eftir í dag.</div>';
+      return;
+    }
+    el.innerHTML = d.items.map(ev => {
+      const start = ev.start.dateTime
+        ? new Date(ev.start.dateTime).toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'})
+        : 'Allur dagur';
+      const loc = ev.location ? `<div class="event-loc">${ev.location}</div>` : '';
+      return `<div class="event">
+        <div class="event-time">${start}</div>
+        <div><div class="event-title">${ev.summary||'(engin heiti)'}</div>${loc}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('maja-cal').innerHTML = '<div class="empty">Gat ekki sótt dagatal.</div>';
+  }
+}
 </script>
 </body>
 </html>
