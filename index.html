@@ -154,6 +154,55 @@
   .footer { text-align: center; font-size: 0.7rem; color: var(--muted); padding: 6px 0 2px; }
   .footer a { color: var(--muted); }
 
+  /* Month button */
+  .month-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    font-size: 0.85rem; color: var(--muted);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .month-btn:hover { border-color: rgba(28,28,26,0.22); box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: var(--text); }
+
+  /* Month overlay */
+  .month-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(28,28,26,0.5); z-index: 200;
+    align-items: flex-start; justify-content: center;
+    padding: 1rem; overflow-y: auto;
+  }
+  .month-overlay.open { display: flex; }
+  .month-panel {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border);
+    width: 100%; max-width: 820px;
+    padding: 1.25rem; margin: auto;
+  }
+  .month-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .month-nav { display: flex; align-items: center; gap: 12px; }
+  .month-nav-btn { font-size: 1.1rem; color: var(--muted); cursor: pointer; border: none; background: none; padding: 2px 8px; border-radius: var(--radius-sm); }
+  .month-nav-btn:hover { background: var(--bg); }
+  .month-title { font-size: 1.1rem; font-weight: 500; min-width: 180px; text-align: center; }
+  .month-close { font-size: 1.2rem; color: var(--muted); cursor: pointer; border: none; background: none; padding: 2px 8px; }
+  .month-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--muted); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .cal-dow { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); text-align: center; padding: 4px 0 6px; }
+  .cal-day { min-height: 72px; border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 5px 6px; background: var(--surface); position: relative; }
+  .cal-day.other-month { background: var(--bg); opacity: 0.45; }
+  .cal-day.today { border-color: var(--maja); border-width: 2px; }
+  .cal-day.weekend { background: #FAFAF8; }
+  .cal-day.school-holiday { background: #FEF6F0; }
+  .cal-day-num { font-size: 0.75rem; font-weight: 500; color: var(--muted); margin-bottom: 3px; }
+  .cal-day.today .cal-day-num { color: var(--maja); font-weight: 700; }
+  .cal-event { font-size: 0.63rem; padding: 1px 5px; border-radius: 3px; margin-bottom: 2px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-holiday-label { font-size: 0.6rem; color: var(--warn); font-weight: 600; margin-bottom: 2px; }
+
   /* Kid card clickable */
   .kid-card { cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
   .kid-card:hover { border-color: rgba(28,28,26,0.22); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
@@ -299,11 +348,50 @@
     <div class="traffic-grid" id="traffic"></div>
   </div>
 
+  <!-- MONTH CALENDAR BUTTON -->
+  <button class="month-btn" onclick="openMonthCal()">
+    📅 Mánaðaryfirlit — Maja · Elly · Hjálmar
+  </button>
+
+  <!-- MONTH OVERLAY -->
+  <div class="month-overlay" id="month-overlay" onclick="closeMonthCal(event)">
+    <div class="month-panel">
+      <div class="month-header">
+        <div class="month-nav">
+          <button class="month-nav-btn" onclick="changeMonth(-1)">←</button>
+          <span class="month-title" id="month-title"></span>
+          <button class="month-nav-btn" onclick="changeMonth(1)">→</button>
+        </div>
+        <button class="month-close" onclick="closeMonthCal()">✕</button>
+      </div>
+      <div class="month-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--maja)"></div>Maja</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--elly)"></div>Elly</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--hjalmar)"></div>Hjálmar</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warn);opacity:0.6"></div>Skólafrí/starfsdagur</div>
+      </div>
+      <div class="cal-grid" id="month-grid"></div>
+    </div>
+  </div>
+
   <div class="footer">Uppfært <span id="last-update"></span> · <a href="https://mariahjalmars.is">mariahjalmars.is</a></div>
 
 </div>
 
 <script>
+// ── SHARED HELPERS & GOOGLE STORE (defined first so everything below can use them) ──
+const gStore = { token: null, calendars: [], events: new Map(), loadedMonths: new Set(), loaded: false };
+const WHO_STYLE = {
+  maja:    { color: 'var(--maja)',    bg: 'var(--maja-bg)' },
+  elly:    { color: 'var(--elly)',    bg: 'var(--elly-bg)' },
+  hjalmar: { color: 'var(--hjalmar)', bg: 'var(--hjalmar-bg)' },
+  family:  { color: '#5F5E5A',        bg: '#EFEEE9' },
+};
+function pad2(n) { return String(n).padStart(2, '0'); }
+function localDateKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function hhmm(d) { return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 // ── CLOCK & DATE ──────────────────────────────────────────────
 const DAYS_IS = ['Sunnudagur','Mánudagur','Þriðjudagur','Miðvikudagur','Fimmtudagur','Föstudagur','Laugardagur'];
 const MONTHS_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
@@ -351,7 +439,7 @@ function getSchoolAlert(dateStr) {
 
 const ELLY_ACTIVITIES = [
   // Leiklist: Tue+Thu 16:30–18:30, runs all autumn
-  { dow:[2,4], start:'16:30', end:'18:30', title:'Leiklist', loc:'Borgarleikhúsið', color:'var(--elly)', until:'2026-12-19' },
+  { dow:[2,4], start:'16:30', end:'18:30', title:'Leiklist', loc:'Borgarleikhúsið', color:'var(--elly)', from:'2026-09-08', until:'2026-12-19' },
   // Fimleikar: Mon/Wed/Thu 18:00–20:30
   { dow:[1,3,4], start:'18:00', end:'20:30', title:'2.fl. Fimleikar — þrjátt', loc:'Grótta', color:'var(--elly)', until:'2026-12-19' },
   // Fimleikar Sun: 50/50 æfing 16:00–19:00
@@ -373,6 +461,7 @@ const HJALMAR_ONEOFF = [
 
 const ELLY_ONEOFF = [
   { date:'2026-09-24', start:'20:00', end:'21:30', title:'FermingarReunion', loc:'Neskirkja', color:'var(--elly)' },
+  { date:'2026-11-09', allDay:true, title:'Skrekkur', loc:'', color:'var(--elly)' },
 ];
 const SHARED_ONEOFF = [];
 
@@ -401,13 +490,12 @@ const HJALMAR_TIMETABLE = {
 };
 
 function todayStr() {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
+  return localDateKey(new Date());
 }
 
 function isWeekday(dow) { return dow >= 1 && dow <= 5; }
 
-function getKidSchedule(activities, oneoffs, schoolEndMap) {
+function getKidSchedule(activities, oneoffs, schoolEndMap, who) {
   const now = new Date();
   const dow = now.getDay();
   const ds = todayStr();
@@ -424,19 +512,31 @@ function getKidSchedule(activities, oneoffs, schoolEndMap) {
     }
   }
 
-  // Recurring activities
-  activities.forEach(a => {
-    if (a.dow.includes(dow) && ds <= a.until) {
-      items.push({ time: a.start + '–' + a.end, title: a.title, loc: a.loc, color: a.color });
+  // Recurring activities — hardcoded fallback, only used until Google Calendar (Abler) is connected
+  if (!gStore.loaded) {
+    activities.forEach(a => {
+      if (a.dow.includes(dow) && ds <= a.until && ds >= (a.from || '2026-08-24')) {
+        items.push({ time: a.start + '–' + a.end, title: a.title, loc: a.loc, color: a.color });
+      }
+    });
+  }
+
+  // One-off (hardcoded, e.g. Skrekkur)
+  oneoffs.forEach(o => {
+    if (o.date === ds) {
+      if (o.allDay) items.push({ time: '00:00–00:00', allDay: true, title: o.title, loc: o.loc, color: o.color });
+      else items.push({ time: o.start + '–' + o.end, title: o.title, loc: o.loc, color: o.color });
     }
   });
 
-  // One-off
-  oneoffs.forEach(o => {
-    if (o.date === ds) {
-      items.push({ time: o.start + '–' + o.end, title: o.title, loc: o.loc, color: o.color });
-    }
-  });
+  // Google Calendar events (Abler + the kids' own calendars)
+  if (gStore.loaded) {
+    gEventsFor(ds, [who]).forEach(e => {
+      const color = WHO_STYLE[who].color;
+      if (e.allDay) items.push({ time: '00:00–00:00', allDay: true, title: e.title, loc: e.loc, color });
+      else items.push({ time: e.start + '–' + e.end, title: e.title, loc: e.loc, color });
+    });
+  }
 
   items.sort((a,b) => a.time.localeCompare(b.time));
   return items;
@@ -458,17 +558,18 @@ function renderKidSchedule(elId, activities, oneoffs, schoolEndMap, name) {
     html += `<div class="school-block">Enginn skóli í dag 🏠</div>`;
   }
 
-  const items = getKidSchedule(activities, oneoffs, schoolEndMap);
+  const who = name === 'Elly' ? 'elly' : 'hjalmar';
+  const items = getKidSchedule(activities, oneoffs, schoolEndMap, who);
 
   if (items.length === 0) {
     html += `<div class="empty">Ekkert skráð í dag.</div>`;
   } else {
     items.forEach(item => {
       html += `<div class="event">
-        <div class="event-time">${item.time.split('–')[0]}</div>
+        <div class="event-time">${item.allDay ? 'Allur dagur' : item.time.split('–')[0]}</div>
         <div>
-          <div class="event-title">${item.title}</div>
-          <div class="event-loc">${item.loc}</div>
+          <div class="event-title">${esc(item.title)}</div>
+          ${item.loc ? `<div class="event-loc">${esc(item.loc)}</div>` : ''}
         </div>
       </div>`;
     });
@@ -476,7 +577,7 @@ function renderKidSchedule(elId, activities, oneoffs, schoolEndMap, name) {
 
   // Next notable event if today is empty/weekend
   if (!isWeekday(dow)) {
-    const nextAct = getNextActivity(activities, oneoffs);
+    const nextAct = getNextActivity(activities, oneoffs, who);
     if (nextAct) {
       html += `<div style="margin-top:8px;font-size:0.75rem;color:var(--muted);">Næst: ${nextAct.title} ${nextAct.when}</div>`;
     }
@@ -485,22 +586,33 @@ function renderKidSchedule(elId, activities, oneoffs, schoolEndMap, name) {
   el.innerHTML = html;
 }
 
-function getNextActivity(activities, oneoffs) {
+function getNextActivity(activities, oneoffs, who) {
   const now = new Date();
   for (let i = 1; i <= 7; i++) {
     const d = new Date(now); d.setDate(d.getDate() + i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateKey(d);
     const dow = d.getDay();
-    for (const a of activities) {
-      if (a.dow.includes(dow) && ds <= a.until) {
-        return { title: a.title, when: DAYS_IS[dow].toLowerCase() };
+    if (!gStore.loaded) {
+      for (const a of activities) {
+        if (a.dow.includes(dow) && ds <= a.until && ds >= (a.from || '2026-08-24')) {
+          return { title: a.title, when: DAYS_IS[dow].toLowerCase() };
+        }
       }
     }
     for (const o of oneoffs) {
       if (o.date === ds) return { title: o.title, when: DAYS_IS[dow].toLowerCase() };
     }
+    if (gStore.loaded) {
+      const e = gEventsFor(ds, [who])[0];
+      if (e) return { title: esc(e.title), when: DAYS_IS[dow].toLowerCase() + (e.allDay ? '' : ' kl. ' + e.start) };
+    }
   }
   return null;
+}
+
+function refreshKids() {
+  renderKidSchedule('elly-content', ELLY_ACTIVITIES, ELLY_ONEOFF, ELLY_SCHOOL_END, 'Elly');
+  renderKidSchedule('hjalmar-content', HJALMAR_ACTIVITIES, HJALMAR_ONEOFF, HJALMAR_SCHOOL_END, 'Hjálmar');
 }
 
 renderKidSchedule('elly-content', ELLY_ACTIVITIES, ELLY_ONEOFF, ELLY_SCHOOL_END, 'Elly');
@@ -666,15 +778,26 @@ function openDetail(kid) {
     }
   }
 
-  // Activities
-  activities.forEach(a => {
-    if (a.dow.includes(dow) && ds <= a.until) {
-      slots.push({ start:a.start, end:a.end, title:a.title, loc:a.loc, color:isElly?'var(--elly)':'var(--hjalmar)', school:false });
-    }
-  });
+  // Activities — hardcoded fallback until Google Calendar (Abler) is connected
+  if (!gStore.loaded) {
+    activities.forEach(a => {
+      if (a.dow.includes(dow) && ds <= a.until && ds >= (a.from || '2026-08-24')) {
+        slots.push({ start:a.start, end:a.end, title:a.title, loc:a.loc, color:isElly?'var(--elly)':'var(--hjalmar)', school:false });
+      }
+    });
+  }
+  const allDayItems = [];
   oneoffs.forEach(o => {
-    if (o.date === ds) slots.push({ start:o.start, end:o.end, title:o.title, loc:o.loc, color:o.color, school:false });
+    if (o.date !== ds) return;
+    if (o.allDay) allDayItems.push(o);
+    else slots.push({ start:o.start, end:o.end, title:o.title, loc:o.loc, color:o.color, school:false });
   });
+  if (gStore.loaded) {
+    gEventsFor(ds, [kid]).forEach(e => {
+      if (e.allDay) allDayItems.push({ title:e.title, loc:e.loc, color:color });
+      else slots.push({ start:e.start, end:e.end, title:e.title, loc:e.loc, color:color, school:false });
+    });
+  }
 
   slots.sort((a,b) => a.start.localeCompare(b.start));
 
@@ -686,6 +809,12 @@ function openDetail(kid) {
   const alert2 = getSchoolAlert(ds);
   if (alert2) html += `<div class="school-alert" style="margin-bottom:12px;">${alert2.label}</div>`;
   if (!isWeekday(dow)) html += `<div class="empty" style="margin-bottom:12px;">Enginn skóli í dag 🏠</div>`;
+  allDayItems.forEach(o => {
+    html += `<div class="tl-block" style="background:${o.color};color:white;margin-bottom:10px;">
+      <div class="tl-block-title">${esc(o.title)} <span style="font-weight:400;font-size:0.72rem;">Allur dagur</span></div>
+      ${o.loc ? `<div class="tl-block-loc" style="color:rgba(255,255,255,0.8);">${esc(o.loc)}</div>` : ''}
+    </div>`;
+  });
 
   for (let h = startH; h < endH; h++) {
     const hMin = h * 60;
@@ -706,8 +835,8 @@ function openDetail(kid) {
       const border = s.school ? `border-left: 3px solid #ccc;` : '';
       const tc = s.school ? 'var(--text)' : 'white';
       html += `<div class="tl-block" style="background:${bg};${border}color:${tc};">
-        <div class="tl-block-title">${s.title} <span style="font-weight:400;font-size:0.72rem;">${s.start}–${s.end}</span></div>
-        <div class="tl-block-loc" style="color:${s.school?'var(--muted)':'rgba(255,255,255,0.8)'};">${s.loc}</div>
+        <div class="tl-block-title">${esc(s.title)} <span style="font-weight:400;font-size:0.72rem;">${s.start}–${s.end}</span></div>
+        <div class="tl-block-loc" style="color:${s.school?'var(--muted)':'rgba(255,255,255,0.8)'};">${esc(s.loc)}</div>
       </div>`;
     });
 
@@ -733,53 +862,326 @@ function closeDetail(e) {
   }
 }
 
+// ── MONTH CALENDAR ───────────────────────────────────────────
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+
+async function openMonthCal() {
+  document.getElementById('month-overlay').classList.add('open');
+  renderMonthCal();
+  if (gStore.token) {
+    try { await ensureMonth(calYear, calMonth); renderMonthCal(); } catch(e) {}
+  }
+}
+function closeMonthCal(e) {
+  if (!e || e.target === document.getElementById('month-overlay')) {
+    document.getElementById('month-overlay').classList.remove('open');
+  }
+}
+async function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderMonthCal();
+  if (gStore.token) {
+    try { await ensureMonth(calYear, calMonth); renderMonthCal(); } catch(e) {}
+  }
+}
+
+// Get all events for a given date string YYYY-MM-DD
+function getEventsForDate(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const dow = d.getDay();
+  const events = [];
+
+  // School alert
+  const alert = getSchoolAlert(ds);
+  if (alert) events.push({ label: alert.label, color: 'var(--warn)', bg: '#FEF6F0', who: 'all' });
+
+  // Hardcoded recurring activities — fallback until Google Calendar (Abler) is connected
+  if (!gStore.loaded) {
+    ELLY_ACTIVITIES.forEach(a => {
+      if (a.dow.includes(dow) && ds <= a.until && ds >= (a.from || '2026-08-24')) {
+        events.push({ label: a.title, color: 'var(--elly)', bg: 'var(--elly-bg)', who: 'elly' });
+      }
+    });
+    HJALMAR_ACTIVITIES.forEach(a => {
+      if (a.dow.includes(dow) && ds <= a.until && ds >= (a.from || '2026-08-24')) {
+        events.push({ label: a.title, color: 'var(--hjalmar)', bg: 'var(--hjalmar-bg)', who: 'hjalmar' });
+      }
+    });
+  }
+
+  // Hardcoded one-offs (e.g. Skrekkur)
+  ELLY_ONEOFF.forEach(o => {
+    if (o.date === ds) events.push({ label: o.title, color: 'var(--elly)', bg: 'var(--elly-bg)', who: 'elly' });
+  });
+  HJALMAR_ONEOFF.forEach(o => {
+    if (o.date === ds) events.push({ label: o.title, color: 'var(--hjalmar)', bg: 'var(--hjalmar-bg)', who: 'hjalmar' });
+  });
+
+  // Google Calendar events: Maja, family, and the kids (Abler + their own calendars)
+  gEventsFor(ds).forEach(e => {
+    const st = WHO_STYLE[e.who] || WHO_STYLE.family;
+    events.push({ label: esc((e.allDay ? '' : e.start + ' ') + e.title), color: st.color, bg: st.bg, who: e.who });
+  });
+
+  return events;
+}
+
+function renderMonthCal() {
+  const MONTHS_LONG = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
+  const DOW_SHORT = ['Mán','Þri','Mið','Fim','Fös','Lau','Sun'];
+  document.getElementById('month-title').textContent = MONTHS_LONG[calMonth] + ' ' + calYear;
+
+  const grid = document.getElementById('month-grid');
+  let html = DOW_SHORT.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  // First day of month — adjust so week starts Monday
+  const firstDay = new Date(calYear, calMonth, 1);
+  let startDow = firstDay.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
+
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date();
+  const todayDs = todayStr();
+
+  let dayCount = 1;
+  let nextCount = 1;
+
+  // Total cells needed
+  const totalCells = Math.ceil((startDow + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    let dayNum, ds, inMonth;
+    if (i < startDow) {
+      dayNum = daysInPrev - startDow + i + 1;
+      const pm = calMonth === 0 ? 11 : calMonth - 1;
+      const py = calMonth === 0 ? calYear - 1 : calYear;
+      ds = `${py}-${String(pm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      inMonth = false;
+    } else if (dayCount <= daysInMonth) {
+      dayNum = dayCount++;
+      ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      inMonth = true;
+    } else {
+      dayNum = nextCount++;
+      const nm = calMonth === 11 ? 0 : calMonth + 1;
+      const ny = calMonth === 11 ? calYear + 1 : calYear;
+      ds = `${ny}-${String(nm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      inMonth = false;
+    }
+
+    const d = new Date(ds + 'T12:00:00');
+    const dow = d.getDay(); // 0=Sun, 6=Sat
+    const isWeekend = dow === 0 || dow === 6;
+    const isToday = ds === todayDs;
+    const alert = getSchoolAlert(ds);
+    const isHoliday = alert && inMonth;
+
+    let classes = 'cal-day';
+    if (!inMonth) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (isWeekend) classes += ' weekend';
+    if (isHoliday) classes += ' school-holiday';
+
+    const events = inMonth ? getEventsForDate(ds) : [];
+    const evHtml = events.slice(0,4).map(ev =>
+      `<div class="cal-event" style="background:${ev.bg};color:${ev.color};">${ev.label}</div>`
+    ).join('');
+    const moreHtml = events.length > 4 ? `<div style="font-size:0.6rem;color:var(--muted);">+${events.length-4} fleiri</div>` : '';
+
+    html += `<div class="${classes}">
+      <div class="cal-day-num">${dayNum}</div>
+      ${isHoliday ? `<div class="cal-holiday-label">${alert.label.split('—')[0].trim()}</div>` : ''}
+      ${evHtml}${moreHtml}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
 // ── GOOGLE CALENDAR ───────────────────────────────────────────
+// Reads ALL of Maja's calendars: her own, ÍMARK board, Family, the kids' own
+// calendars and the Abler sync calendar (events are tagged "Elly …" / "Hjálmar …").
 const CLIENT_ID = '865507997051-8a0l6dpl5dsk278mpnll9spmfqs1re79.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 
 function startGoogleAuth() {
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(location.href.split('#')[0])}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
-  if (CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-    alert('Settu inn þinn Google Client ID í kóðann (CLIENT_ID).\nSjá leiðbeiningar í Claude.');
-    return;
-  }
   window.location.href = url;
 }
 
-const hashParams = new URLSearchParams(location.hash.replace('#','?'));
-const token = hashParams.get('access_token');
-if (token) fetchGoogleCalendar(token);
+// Which "kind" of calendar is this?
+function classifyCalendar(c) {
+  const name = (c.summaryOverride || c.summary || '').trim().toLowerCase();
+  const id = c.id || '';
+  if (id.includes('#holiday@')) return null;            // Icelandic holidays — school calendar already covers this
+  if (name.startsWith('abler')) return 'abler';          // Abler sync (both kids in one calendar)
+  if (name === 'elly') return 'elly';
+  if (name === 'hjálmar' || name === 'hjalmar') return 'hjalmar';
+  if (name === 'family') return 'family';
+  if (c.primary) return 'maja';
+  if (id.endsWith('@import.calendar.google.com')) return null; // other imported feeds
+  return 'maja';                                         // e.g. Stjórn ÍMARK
+}
 
-async function fetchGoogleCalendar(token) {
+function shortLoc(loc) {
+  if (!loc) return '';
+  const parts = loc.split(',').map(s => s.trim()).filter(s => s && !['Iceland', 'Reykjavík', 'Reykjavik'].includes(s));
+  return parts.slice(0, 2).join(', ');
+}
+
+function normalizeEvent(ev, cal) {
+  if (!ev || ev.status === 'cancelled' || !ev.start) return null;
+  const allDay = !!ev.start.date;
+  let who = cal.kind;
+  let title = ev.summary || '(atburður)';
+
+  if (cal.kind === 'abler') {
+    // "Elly Margrethe S. · 2.stig A/B – Leiklist 2. stig B"  →  elly, "Leiklist 2. stig B"
+    const m = title.match(/^(Elly|Hjálmar)[^·]*·\s*(.*)$/);
+    if (m) { who = m[1] === 'Elly' ? 'elly' : 'hjalmar'; title = m[2]; }
+    else { who = 'family'; }
+    const dash = title.indexOf(' – ');
+    if (dash > -1) title = title.slice(dash + 3);
+  }
+
+  const e = { key: cal.id + '|' + ev.id, who, title: title.trim(), loc: shortLoc(ev.location), allDay };
+  if (allDay) {
+    e.date = ev.start.date;
+    e.endDate = (ev.end && ev.end.date) || ev.start.date;
+  } else {
+    const s = new Date(ev.start.dateTime);
+    const en = new Date(ev.end.dateTime);
+    e.date = localDateKey(s);
+    e.start = hhmm(s);
+    e.end = hhmm(en);
+    e.endTs = en.getTime();
+  }
+  return e;
+}
+
+// All events on a given day (YYYY-MM-DD), optionally limited to some people
+function gEventsFor(ds, whos) {
+  const list = [];
+  const seen = new Set();
+  gStore.events.forEach(e => {
+    if (whos && !whos.includes(e.who)) return;
+    const hit = e.allDay ? (ds >= e.date && (ds < e.endDate || ds === e.date)) : e.date === ds;
+    if (!hit) return;
+    // A person can't be in two places at once: drop exact duplicates (same person + same time)
+    const dupKey = e.allDay ? null : e.who + '|' + e.date + '|' + e.start + '|' + e.end;
+    if (dupKey) { if (seen.has(dupKey)) return; seen.add(dupKey); }
+    list.push(e);
+  });
+  list.sort((a, b) => (b.allDay - a.allDay) || (a.start || '').localeCompare(b.start || '') || a.title.localeCompare(b.title));
+  return list;
+}
+
+async function gFetch(url) {
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + gStore.token } });
+  if (r.status === 401) { gAuthLost(); throw new Error('auth'); }
+  if (!r.ok) throw new Error('http ' + r.status);
+  return r.json();
+}
+
+function gAuthLost() {
+  gStore.token = null;
   const btn = document.getElementById('cal-btn');
-  if(btn) btn.textContent = '⟳ samstillt';
+  if (btn) btn.textContent = 'tengjast aftur →';
+}
+
+async function loadCalendars() {
+  const d = await gFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=100');
+  gStore.calendars = (d.items || [])
+    .map(c => ({ id: c.id, kind: classifyCalendar(c) }))
+    .filter(c => c.kind);
+}
+
+// Load one calendar month for every calendar (cached unless force)
+async function ensureMonth(year, month, force) {
+  if (!gStore.token) return;
+  const key = year + '-' + month;
+  if (!force && gStore.loadedMonths.has(key)) return;
+  const min = encodeURIComponent(new Date(year, month, 1).toISOString());
+  const max = encodeURIComponent(new Date(year, month + 1, 1).toISOString());
+  let failed = false;
+  const batches = await Promise.all(gStore.calendars.map(async cal => {
+    try {
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=250`;
+      const d = await gFetch(url);
+      return (d.items || []).map(ev => normalizeEvent(ev, cal)).filter(Boolean);
+    } catch (e) { failed = true; return []; }
+  }));
+  if (!failed) {
+    // Drop old copies of this month so deleted/moved events disappear
+    const prefix = year + '-' + pad2(month + 1);
+    gStore.events.forEach((e, k) => { if (e.date.startsWith(prefix)) gStore.events.delete(k); });
+  }
+  batches.flat().forEach(e => gStore.events.set(e.key, e));
+  if (!failed) gStore.loadedMonths.add(key);
+}
+
+// Maja's card: what's left of today (her calendars + family)
+function renderMajaToday() {
+  const el = document.getElementById('maja-cal');
+  if (!el) return;
+  const nowTs = Date.now();
+  const list = gEventsFor(todayStr(), ['maja', 'family']).filter(e => e.allDay || e.endTs >= nowTs);
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">Enginn viðburður eftir í dag.</div>';
+    return;
+  }
+  el.innerHTML = list.map(e => `<div class="event">
+      <div class="event-time">${e.allDay ? 'Allur dagur' : e.start}</div>
+      <div>
+        <div class="event-title">${esc(e.title)}${e.who === 'family' ? ' <span style="font-size:0.68rem;color:var(--muted);">· fjölskyldan</span>' : ''}</div>
+        ${e.loc ? `<div class="event-loc">${esc(e.loc)}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function renderGoogleViews() {
+  renderMajaToday();
+  refreshKids();
+  if (document.getElementById('month-overlay').classList.contains('open')) renderMonthCal();
+}
+
+async function initGoogle(token) {
+  gStore.token = token;
+  const btn = document.getElementById('cal-btn');
+  if (btn) btn.textContent = '⟳ sæki dagatöl…';
   try {
+    await loadCalendars();
     const now = new Date();
-    const end = new Date(now); end.setHours(23,59,59);
-    const r = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10`,
-      { headers: { Authorization: 'Bearer '+token } }
-    );
-    const d = await r.json();
-    const el = document.getElementById('maja-cal');
-    if (!d.items || d.items.length === 0) {
-      el.innerHTML = '<div class="empty">Enginn viðburður eftir í dag.</div>';
-      return;
+    await ensureMonth(now.getFullYear(), now.getMonth(), true);
+    const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    await ensureMonth(nm.getFullYear(), nm.getMonth(), true); // lets "Næst:" look across month end
+    gStore.loaded = true;
+    if (btn && gStore.token) btn.textContent = 'samstillt ✓';
+    renderGoogleViews();
+  } catch (e) {
+    if (gStore.token) {
+      if (btn) btn.textContent = 'villa — reyna aftur';
+      const el = document.getElementById('maja-cal');
+      if (el) el.innerHTML = '<div class="empty">Gat ekki sótt dagatöl.</div>';
     }
-    el.innerHTML = d.items.map(ev => {
-      const start = ev.start.dateTime
-        ? new Date(ev.start.dateTime).toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'})
-        : 'Allur dagur';
-      const loc = ev.location ? `<div class="event-loc">${ev.location}</div>` : '';
-      return `<div class="event">
-        <div class="event-time">${start}</div>
-        <div><div class="event-title">${ev.summary||'(engin heiti)'}</div>${loc}</div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    document.getElementById('maja-cal').innerHTML = '<div class="empty">Gat ekki sótt dagatal.</div>';
   }
 }
+
+// Keep fresh: re-sync every 5 minutes, re-draw "what's left today" every minute
+setInterval(() => {
+  if (!gStore.token || !gStore.loaded) return;
+  const now = new Date();
+  ensureMonth(now.getFullYear(), now.getMonth(), true).then(renderGoogleViews).catch(() => {});
+}, 5 * 60 * 1000);
+setInterval(() => { if (gStore.loaded) renderMajaToday(); }, 60 * 1000);
+
+const hashParams = new URLSearchParams(location.hash.replace('#', '?'));
+const token = hashParams.get('access_token');
+if (token) initGoogle(token);
 </script>
 </body>
 </html>
