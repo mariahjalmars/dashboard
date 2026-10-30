@@ -333,6 +333,12 @@ function normalize(ev,cal){
     title=(dash>-1?rest.slice(dash+3):rest).trim();
     if(/^afl[a-zý]*st/i.test(fold(title))&&!cancelled){cancelled=true}
   }
+  if(cal.kind==='maja'||cal.kind==='family'){
+    const ft=fold(title);
+    const nm=ft.match(/\b(elly|hjalmar)\b/);
+    const k=nm?nm[1]:/fotbolt|markmann|frostaskjol/.test(ft)?'hjalmar':/fimleik|leiklist/.test(ft)?'elly':null;
+    if(k){who=k;const m=title.match(/^(Elly|Hj[aá]lmar)[^:–-]{0,25}[:–-]\s*/i);if(m)title=title.slice(m[0].length)}
+  }
   const e={key:cal.id+'|'+ev.id,who,title:title.trim(),loc:shortLoc(ev.location),allDay,cancelled};
   if(allDay){e.date=ev.start.date;e.endDate=(ev.end&&ev.end.date)||ev.start.date}
   else{const s=new Date(ev.start.dateTime),en=new Date(ev.end.dateTime);e.date=dkey(s);e.s=s.getHours()*60+s.getMinutes();e.e=en.getTime()-s.getTime()>0?(dkey(en)===e.date?en.getHours()*60+en.getMinutes():1440):e.s+30;e.endTs=en.getTime()}
