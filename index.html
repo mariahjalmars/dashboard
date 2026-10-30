@@ -282,6 +282,7 @@ function schoolDay(who,ds){
 
 /* ── GOOGLE DAGATAL ───────────────────────────────────────────── */
 const CLIENT_ID='865507997051-8a0l6dpl5dsk278mpnll9spmfqs1re79.apps.googleusercontent.com';
+const ABLER_ID='b0eba4b68ed087637cb8323c4f080a41deb260eb92fb42a7b2ba29df0e8a53f3@group.calendar.google.com';
 const SCOPE='https://www.googleapis.com/auth/calendar.readonly';
 const redirectUri=()=>location.origin+location.pathname;
 function startAuth(silent){
@@ -355,6 +356,7 @@ function authLost(){G.token=null;G.loaded=false;clearTok();setStatus('off');rend
 async function loadCals(){
   const d=await gFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=100');
   G.cals=(d.items||[]).map(c=>({id:c.id,kind:classify(c)})).filter(c=>c.kind);
+  if(!G.cals.some(c=>c.id===ABLER_ID))G.cals.push({id:ABLER_ID,kind:'abler'});
 }
 async function ensureMonth(y,m,force){
   if(!G.token)return;
