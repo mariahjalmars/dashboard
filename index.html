@@ -324,8 +324,11 @@ function normalize(ev,cal){
     const i=title.indexOf('·');
     let head='',rest=title;
     if(i>-1){head=title.slice(0,i);rest=title.slice(i+1).trim()}
-    const fh=fold(head);
-    who=fh.includes('elly')?'elly':fh.includes('hjalmar')?'hjalmar':'family';
+    else{const m=title.match(/^(Elly|Hj[aá]lmar)[^:–-]{0,25}[:–-]\s*/i);if(m){head=m[0];rest=title.slice(m[0].length)}}
+    const ft=fold(title);
+    who=fold(head).includes('elly')?'elly':fold(head).includes('hjalmar')?'hjalmar':
+      /fotbolt|markmann|styrktar|\bleikur|\blid \d|\bkr\b|frostaskjol|kori/.test(ft)?'hjalmar':
+      /leiklist|fimleik|grotta|borgarleik|\bsvid\b/.test(ft)?'elly':'family';
     const dash=rest.indexOf(' – ');
     title=(dash>-1?rest.slice(dash+3):rest).trim();
     if(/^afl[a-zý]*st/i.test(fold(title))&&!cancelled){cancelled=true}
@@ -355,7 +358,7 @@ async function gFetch(url){
 function authLost(){G.token=null;G.loaded=false;clearTok();setStatus('off');renderAll();trySilent()}
 async function loadCals(){
   const d=await gFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=100');
-  G.cals=(d.items||[]).map(c=>({id:c.id,kind:classify(c)})).filter(c=>c.kind);
+  G.cals=(d.items||[]).map(c=>({id:c.id,kind:c.id===ABLER_ID?'abler':classify(c)})).filter(c=>c.kind);
   if(!G.cals.some(c=>c.id===ABLER_ID))G.cals.push({id:ABLER_ID,kind:'abler'});
 }
 async function ensureMonth(y,m,force){
