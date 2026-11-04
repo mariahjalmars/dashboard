@@ -213,6 +213,7 @@ const todayKey=()=>dkey(new Date());
 const state={date:todayKey(),focus:null,month:null,full:false,tab:'maja'};
 const isMobile=()=>window.innerWidth<=640;
 const G={token:null,exp:0,cals:[],events:new Map(),months:new Set(),loaded:false,status:'off',last:null};
+let FEED='';
 const fold=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 
 /* ── SKÓLADAGATAL 2026–27 (Hagaskóli) ─────────────────────────── */
@@ -401,13 +402,50 @@ async function initGoogle(){
     G.loaded=true;G.last=new Date();setStatus('ok');renderAll();
   }catch(e){if(G.token){setStatus('err');renderAll()}}
 }
+/* ── APPS SCRIPT-VEITA: iPad á vegg þarf enga Google-innskráningu ──
+   Slóðin (með lykli) er aldrei í kóðanum. Hún kemur með #feed=… í vefslóðinni. */
+const FEED_CAL={personal:'maja',imark:'maja',imark2:'maja',family:'family',elly:'elly',hjalmar:'hjalmar',mentor:'hjalmar',abler:'abler'};
+const validFeed=u=>/^https:\/\/script\.google\.com\/macros\//.test(u||'');
+function storedFeed(){try{return localStorage.getItem('fd_feed')||''}catch(e){return ''}}
+function storeFeed(u){try{localStorage.setItem('fd_feed',u)}catch(e){}}
+function jsonp(url){
+  return new Promise((res,rej)=>{
+    const cb='fdcb'+Date.now(),s=document.createElement('script');
+    const done=()=>{clearTimeout(t);delete window[cb];s.remove()};
+    const t=setTimeout(()=>{done();rej(new Error('timeout'))},45e3);
+    window[cb]=d=>{done();res(d)};
+    s.onerror=()=>{done();rej(new Error('net'))};
+    s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    document.head.appendChild(s);
+  });
+}
+function feedEvent(x){
+  const kind=FEED_CAL[x.cal];
+  if(!kind)return null;
+  const end=x.endDate||x.date,multi=!x.allDay&&x.cal==='mentor'&&end>x.date;
+  const ev={id:[x.date,x.start||'',x.title].join('|'),summary:x.title,location:x.loc};
+  if(x.allDay||multi){ev.start={date:x.date};ev.end={date:multi?addDays(end,1):(x.endDate||addDays(x.date,1))}}
+  else{ev.start={dateTime:x.date+'T'+x.start+':00'};ev.end={dateTime:end+'T'+x.end+':00'}}
+  return normalize(ev,{id:x.cal,kind});
+}
+async function loadFeed(){
+  if(!G.loaded)setStatus('load');
+  try{
+    const d=await jsonp(FEED);
+    if(!d||!Array.isArray(d.events))throw new Error('bad');
+    const m=new Map();
+    d.events.forEach(x=>{const e=feedEvent(x);if(e)m.set(e.key,e)});
+    G.events=m;G.loaded=true;G.last=new Date();setStatus('ok');renderAll();
+  }catch(e){setStatus('err');renderAll()}
+}
+const refreshCal=()=>{if(FEED)loadFeed();else if(G.token)initGoogle()};
 function setStatus(s){
   G.status=s;const b=$('gstat');
   b.className='btn'+(s==='off'?' pri':'');
   b.textContent=s==='ok'?'Google ✓ '+hm(G.last||new Date()):s==='load'?'Sæki…':s==='err'?'Villa – reyna aftur':'Tengja Google';
   b.title=s==='ok'?'Samstillt – smelltu til að sækja aftur':'';
 }
-$('gstat').onclick=()=>{ if(G.status==='ok'||G.status==='err'){ if(G.token)initGoogle(); else startAuth(false);} else if(G.status==='off')startAuth(false) };
+$('gstat').onclick=()=>{ if(FEED){loadFeed();return} if(G.status==='ok'||G.status==='err'){ if(G.token)initGoogle(); else startAuth(false);} else if(G.status==='off')startAuth(false) };
 
 /* ── DAGSMYND ─────────────────────────────────────────────────── */
 function laneData(who,ds,detail){
@@ -688,16 +726,18 @@ tick();setInterval(tick,1000);
 let lastDay=todayKey();
 setInterval(()=>{
   const t=todayKey();
-  if(t!==lastDay){if(state.date===lastDay)state.date=t;lastDay=t;if(G.token)initGoogle()}
+  if(t!==lastDay){if(state.date===lastDay)state.date=t;lastDay=t;refreshCal()}
   renderDay();renderNext();renderSky();
 },60*1000);
-setInterval(()=>{if(G.token&&G.loaded)initGoogle()},5*60*1000);
+setInterval(()=>{if(FEED||(G.token&&G.loaded))refreshCal()},5*60*1000);
 setInterval(loadWeather,30*60*1000);
 
 (function boot(){
   setStatus('off');renderAll();loadWeather();loadTides();
   const h=new URLSearchParams(location.hash.replace(/^#/,''));
   const clean=()=>{try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}};
+  const fd=h.get('feed')||storedFeed();
+  if(validFeed(fd)){FEED=fd;storeFeed(fd);loadFeed();return}
   if(h.get('access_token')){
     G.token=h.get('access_token');G.exp=saveTok(G.token,h.get('expires_in'));clean();initGoogle();
   }else if(h.get('error')){clean();setStatus('off')}
