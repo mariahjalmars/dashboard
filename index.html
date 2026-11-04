@@ -97,6 +97,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button.nm.click{border:1px solid var(--c);border-radius:4px;padding:4px 8px}
 aside{display:grid;gap:16px}
 .card{padding:14px 16px}
+.chip.must{font-weight:700;color:#fff;background:var(--c);border-color:var(--c)}
 .hjol .st{display:flex;align-items:center;gap:12px;border-radius:8px;padding:10px 12px;background:color-mix(in srgb,var(--h) 14%,transparent);border-left:6px solid var(--h)}
 .hjol .st b{display:block;font:700 26px/1.05 var(--fc);letter-spacing:.02em;color:var(--h)}
 .hjol .st span{font-size:13px;line-height:1.3}
@@ -151,6 +152,37 @@ button.nx:hover .t{text-decoration:underline}
   .top{grid-template-columns:1fr;gap:10px}
   .wx{justify-content:flex-start;text-align:left}
   .clock{font-size:56px}
+}
+/* iPad á vegg, standandi: allt á einn skjá */
+@media (min-width:641px) and (max-width:980px) and (orientation:portrait){
+  .wrap{padding:8px 14px 10px}
+  .top{grid-template-columns:auto 1fr auto;gap:0 18px;align-items:center}
+  .clock{font-size:52px}
+  .date .dow{font-size:22px}
+  .date .dn{font-size:15px;margin-top:2px}
+  .sky{height:24px;margin-top:4px}
+  #nextcard{margin-top:4px;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:0 12px;padding:6px 12px}
+  #nextcard .nx>div{min-width:0}
+  #nextcard h3{margin-bottom:0}
+  #nextcard .nx{border-top:0;border-left:1px solid var(--line2);padding:0 0 0 10px}
+  .main{gap:8px;margin-top:8px;grid-template-columns:1fr}
+  .btn{min-height:36px;min-width:36px}
+  .lh{margin-top:4px;padding:6px 8px 5px}
+  .lh button.nm{font-size:20px}
+  .ev.sm{font-size:12px;line-height:1.1;padding-top:0;padding-bottom:0;gap:5px}
+  .ev.sm b{font-size:12px}
+  aside{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch}
+  aside .panel{margin:0}
+  #traffic,.tide .src,.tide .tx{display:none}
+  #nextcard .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{font-size:11px;line-height:1.15;padding:1px 5px}
+  .chips{gap:2px}
+  .daybar{padding-top:6px;padding-bottom:6px}
+  .hjol small{margin-top:4px;font-size:11px}
+  .card{padding:8px 12px}
+  .card h3{font-size:16px;margin-bottom:6px}
+  .hjol .st b{font-size:22px}
+  .tide svg{max-height:84px}
 }
 @media (max-width:640px){
   .tabs{display:flex}
@@ -221,6 +253,7 @@ const WHO={maja:{name:'Maja',c:'var(--maja)'},elly:{name:'Elly',c:'var(--elly)'}
 const todayKey=()=>dkey(new Date());
 const state={date:todayKey(),focus:null,month:null,full:false,tab:'maja'};
 const isMobile=()=>window.innerWidth<=640;
+const isWall=()=>matchMedia('(min-width:641px) and (max-width:980px) and (orientation:portrait)').matches;
 const G={token:null,exp:0,cals:[],events:new Map(),months:new Set(),loaded:false,status:'off',last:null};
 let FEED='';
 const fold=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -429,7 +462,7 @@ function jsonp(url){
   });
 }
 function feedEvent(x){
-  const kind=FEED_CAL[x.cal];
+  const kind=x.cal==='familysand'&&/liverpool|⚽/i.test(x.title||'')?'hjalmar':FEED_CAL[x.cal];
   if(!kind)return null;
   const end=x.endDate||x.date,multi=!x.allDay&&x.cal==='mentor'&&end>x.date;
   const ev={id:[x.date,x.start||'',x.title].join('|'),summary:x.title,location:x.loc};
@@ -471,6 +504,7 @@ function laneData(who,ds,detail){
     const sd=schoolDay(who,ds);
     if(sd&&sd.off)chips.push({t:sd.off+' – enginn skóli',off:true});
     else if(sd){
+      if(sd.lessons.some(l=>l.title==='Íþróttir'))chips.push({t:'MUNA íþróttaföt',strong:true});
       if(sd.note)chips.push({t:sd.note});
       if(sd.lessons.length){
         if(detail)sd.lessons.forEach(l=>push({s:l.s,e:l.e,title:l.title,kind:l.kind}));
@@ -495,7 +529,9 @@ function layoutCols(evs){
   evs.forEach(e=>{if(cl.length&&e.s>=cEnd){flush();cEnd=0}cl.push(e);cEnd=Math.max(cEnd,e.e)});
   if(cl.length)flush();return out;
 }
-function renderDay(){
+function renderDay(hpFit){
+  if(!state.focus)state.fAt=0;else if(!state.fAt)state.fAt=Date.now();
+  else if(FEED&&Date.now()-state.fAt>120000){state.focus=null;state.fAt=0}
   const ds=state.date,now=new Date(),isToday=ds===dkey(now);
   const d=parseD(ds);
   const rel=ds===todayKey()?'Í dag':ds===addDays(todayKey(),1)?'Á morgun':ds===addDays(todayKey(),-1)?'Í gær':'';
@@ -504,7 +540,7 @@ function renderDay(){
   $('today').classList.toggle('on',isToday);
   const mob=isMobile()&&!state.focus;
   const whos=state.focus?[state.focus]:mob?[state.tab]:['maja','elly','hjalmar'];
-  const detail=true;
+  const detail=!!state.focus;
   const data={};whos.forEach(w=>data[w]=laneData(w,ds,detail));
   let lo=8*60,hi=18*60;
   whos.forEach(w=>data[w].ev.forEach(e=>{lo=Math.min(lo,Math.floor(e.s/60)*60);hi=Math.max(hi,Math.ceil(e.e/60)*60)}));
@@ -515,8 +551,8 @@ function renderDay(){
   if(trimmed){lo=Math.floor((nowM-120)/60)*60;hi=Math.max(hi,Math.min(1440,lo+6*60));if(lo+360>1440)lo=1440-360}
   $('fullbtn').style.display=isToday&&(trimmed||state.full)&&nowM>=12*60?'':'none';
   $('fullbtn').textContent=trimmed?'Allur dagurinn':'Frá kl. '+p2(Math.floor((nowM-120)/60))+':00';
-  const rows=(hi-lo)/60,hp=state.focus?64:(mob?60:56);
-  const cols=(state.focus||mob)?'48px 1fr':'48px 1.35fr 1fr 1fr';
+  const rows=(hi-lo)/60,hp=hpFit||(state.focus?64:(mob?60:56));
+  const cols=(state.focus||mob)?'48px 1fr':isWall()?'30px .8fr 1.1fr 1.1fr':'48px 1.35fr 1fr 1fr';
   let axis='';for(let m=lo;m<hi;m+=60)axis+=`<i style="top:${(m-lo)/60*hp}px">${p2(m/60)}</i>`;
   let html=`<div class="cols" style="grid-template-columns:${cols};--hp:${hp}px;--rows:${rows}"><div style="grid-column:1;grid-row:1"></div><div class="axis" style="grid-column:1;grid-row:2;height:${rows*hp}px">${axis}</div>`;
   let li=1;
@@ -530,7 +566,7 @@ function renderDay(){
     }else{
       const evv=ev.filter(e=>e.e>lo);
       layoutCols(evv).forEach(e=>{
-        const s0=Math.max(e.s,lo),h=Math.max(20,(e.e-s0)/60*hp-2),top=(s0-lo)/60*hp+1;
+        const s0=Math.max(e.s,lo),h=Math.max(hpFit?12:20,(e.e-s0)/60*hp-2),top=(s0-lo)/60*hp+1;
         const sm=h<40;
         const tm=fmtT(e.s)+'–'+fmtT(e.e>=1440?1439:e.e);
         const sub=[tm,e.loc].filter(Boolean).join(' · ');
@@ -540,7 +576,7 @@ function renderDay(){
       if(!evv.length&&!(w==='maja'&&!G.loaded))body+=`<div class="empty" style="position:absolute;left:0;right:0;top:20px">${w==='maja'?'Ekkert í dagatalinu':'Ekkert á dagskrá'}</div>`;
       if(isToday){const nm=now.getHours()*60+now.getMinutes();if(nm>=lo&&nm<=hi)body+=`<div class="nowl" style="top:${(nm-lo)/60*hp}px"></div>`}
     }
-    let chipH=chips.map(x=>`<span class="chip${x.off?' off':''}" style="${x.c?'--c:'+x.c:'--c:'+c}">${esc(x.t)}</span>`).join('');
+    let chipH=chips.map(x=>`<span class="chip${x.off?' off':''}${x.strong?' must':''}" style="${x.c?'--c:'+x.c:'--c:'+c}">${esc(x.t)}</span>`).join('');
     if(!G.loaded&&click&&G.status!=='load')chipH+=`<span class="chip" style="--c:var(--mute)">æfingar vantar – Google ótengt</span>`;
     li++;
     html+=`<div class="lh" style="--c:${c};grid-column:${li};grid-row:1"><button class="nm${click?' click':''}" ${click?`data-w="${w}"`:''}>${WHO[w].name}</button><div class="chips">${chipH}</div></div><div class="lane lb2" style="--c:${c};grid-column:${li};grid-row:2">${body}</div>`;
@@ -548,6 +584,11 @@ function renderDay(){
   html+='</div>';
   if(mob)html=`<div class="tabs">${['maja','elly','hjalmar'].map(w=>`<button data-t="${w}" class="${state.tab===w?'on':''}" style="--c:${WHO[w].c}">${WHO[w].name}</button>`).join('')}</div>`+html;
   $('lanes').innerHTML=html;
+  if(!hpFit&&isWall()){
+    const bottom=document.querySelector('aside').getBoundingClientRect().bottom+scrollY;
+    const fit=Math.floor(hp-(bottom+10-innerHeight)/rows);
+    return renderDay(Math.max(24,Math.min(64,fit)));
+  }
   document.querySelectorAll('#lanes .tabs button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.t;renderDay()});
   document.querySelectorAll('#lanes button.nm.click').forEach(b=>b.onclick=()=>{state.focus=state.focus===b.dataset.w?null:b.dataset.w;renderDay()});
 }
@@ -790,6 +831,7 @@ setInterval(()=>{loadWeather();loadBike()},30*60*1000);
   if(G.exp)setTimeout(()=>{trySilent()},Math.max(15e3,G.exp-Date.now()-60e3));
 })();
 
+try{const ro=new ResizeObserver(()=>{if(isWall())renderDay()});['aside','.top','#nextcard'].forEach(q=>ro.observe(document.querySelector(q)))}catch(e){}
 window.addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(renderDay,150)});
 
 </script>
