@@ -256,24 +256,24 @@ const ALERTS=[
 ];
 const alertFor=ds=>ALERTS.find(a=>ds>=a.from&&ds<=(a.to||a.from));
 
-/* ── STUNDASKRÁR (InfoMentor, 24.–28.8.2026; Hjálmar: spænska á fimmtudögum) ── */
+/* ── STUNDASKRÁR (InfoMentor, vikan 2.–8.11.2026) ── */
 const L=(a,b,t)=>[a,b,t];
 const TT={
  elly:{
   1:[L('08:50','09:10','LesUm'),L('09:10','10:10','Danska'),L('10:30','11:30','Enska'),L('11:30','12:30','Stærðfræði'),L('12:30','13:00','Matur'),L('13:00','14:00','Íslenska')],
-  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íslenska'),L('10:30','11:30','Stærðfræði'),L('11:30','12:00','Matur'),L('12:00','13:00','Náttúrufræði'),L('13:00','14:00','Íþróttir'),L('14:00','15:00','Stuðningur í stærðfræði')],
+  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íslenska'),L('10:30','11:30','Stærðfræði'),L('11:30','12:00','Matur'),L('12:00','13:00','Náttúrufræði'),L('13:00','14:00','Íþróttir')],
   3:[L('08:50','09:10','LesUm'),L('09:10','10:10','Danska'),L('10:30','11:30','Umsjón'),L('11:30','12:30','Samfélagsfræði'),L('12:30','13:00','Matur'),L('13:00','14:00','Enska')],
-  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Hringekja'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Náttúrufræði'),L('12:00','12:30','Matur'),L('12:30','13:00','Náttúrufræði'),L('13:00','14:00','Stærðfræði'),L('14:00','15:00','Sálfræði')],
+  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Hringekja'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Náttúrufræði'),L('12:00','12:30','Matur'),L('12:30','13:00','Náttúrufræði'),L('13:00','14:00','Stærðfræði')],
   5:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íslenska'),L('10:30','11:30','Íþróttir'),L('11:30','12:00','Matur'),L('12:00','13:00','Samfélagsfræði'),L('13:00','14:00','Stærðfræði')]},
  hjalmar:{
-  1:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:30','Enska'),L('12:30','13:00','Matur'),L('13:00','14:00','Samfélagsfræði'),L('14:00','15:00','Stuðningur í íslensku')],
-  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Matur'),L('12:00','13:00','Íþróttir'),L('13:00','14:00','Samfélagsfræði')],
+  1:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:30','Enska'),L('12:30','13:00','Matur'),L('13:00','14:00','Samfélagsfræði')],
+  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Matur'),L('12:00','13:00','Íþróttir'),L('13:00','14:00','Samfélagsfræði'),L('14:00','15:00','Spænska')],
   3:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Umsjón'),L('11:30','12:30','Náttúrufræði'),L('12:30','13:00','Matur'),L('13:00','14:00','Danska')],
-  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Náttúrufræði'),L('10:30','11:30','Hringekja'),L('11:30','12:00','Íslenska'),L('12:00','12:30','Matur'),L('12:30','13:00','Íslenska'),L('13:00','14:00','Enska'),L('14:00','15:00','Spænska')],
+  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Náttúrufræði'),L('10:30','11:30','Hringekja'),L('11:30','12:00','Íslenska'),L('12:00','12:30','Matur'),L('12:30','13:00','Íslenska'),L('13:00','14:00','Enska')],
   5:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íþróttir'),L('10:30','11:30','Danska'),L('11:30','12:00','Stærðfræði'),L('12:00','12:30','Matur'),L('12:30','13:00','Stærðfræði'),L('13:00','14:00','Íslenska')]}
 };
 const ONEOFF={
- elly:[{date:'2026-11-09',allDay:true,title:'Skrekkur'}],
+ elly:[{date:'2026-11-04',start:'14:00',end:'17:00',title:'Söngleikur, leikhópur'},{date:'2026-11-09',allDay:true,title:'Skrekkur'}],
  hjalmar:[]
 };
 function schoolDay(who,ds){
@@ -500,7 +500,7 @@ function renderDay(){
   $('today').classList.toggle('on',isToday);
   const mob=isMobile()&&!state.focus;
   const whos=state.focus?[state.focus]:mob?[state.tab]:['maja','elly','hjalmar'];
-  const detail=!!state.focus;
+  const detail=true;
   const data={};whos.forEach(w=>data[w]=laneData(w,ds,detail));
   let lo=8*60,hi=18*60;
   whos.forEach(w=>data[w].ev.forEach(e=>{lo=Math.min(lo,Math.floor(e.s/60)*60);hi=Math.max(hi,Math.ceil(e.e/60)*60)}));
@@ -511,7 +511,7 @@ function renderDay(){
   if(trimmed){lo=Math.floor((nowM-120)/60)*60;hi=Math.max(hi,Math.min(1440,lo+6*60));if(lo+360>1440)lo=1440-360}
   $('fullbtn').style.display=isToday&&(trimmed||state.full)&&nowM>=12*60?'':'none';
   $('fullbtn').textContent=trimmed?'Allur dagurinn':'Frá kl. '+p2(Math.floor((nowM-120)/60))+':00';
-  const rows=(hi-lo)/60,hp=state.focus?64:46;
+  const rows=(hi-lo)/60,hp=state.focus?64:(mob?60:56);
   const cols=(state.focus||mob)?'48px 1fr':'48px 1.35fr 1fr 1fr';
   let axis='';for(let m=lo;m<hi;m+=60)axis+=`<i style="top:${(m-lo)/60*hp}px">${p2(m/60)}</i>`;
   let html=`<div class="cols" style="grid-template-columns:${cols};--hp:${hp}px;--rows:${rows}"><div style="grid-column:1;grid-row:1"></div><div class="axis" style="grid-column:1;grid-row:2;height:${rows*hp}px">${axis}</div>`;
@@ -561,9 +561,9 @@ $('today').onclick=()=>setDate(todayKey());
 function nextUp(who){
   const now=new Date(),t0=dkey(now),nm=now.getHours()*60+now.getMinutes();
   for(let i=0;i<8;i++){
-    const ds=addDays(t0,i),{ev,chips}=laneData(who,ds,false);
+    const ds=addDays(t0,i),{ev,chips}=laneData(who,ds,who!=='maja');
     const c=ev.filter(e=>!e.cancelled&&(i>0||e.e>nm)).sort((a,b)=>a.s-b.s);
-    const act=c.find(e=>e.kind==='event')||c[0];
+    const act=c.find(e=>e.kind!=='meal')||c[0];
     if(!act)continue;
     const d=parseD(ds);
     const when=i===0?'Í dag':i===1?'Á morgun':DOW[d.getDay()];
@@ -621,10 +621,10 @@ function bikeDay(ds){
   if(snow>0&&frost<=2)stop.push('snjór');
   if(frost<=0&&wet>=0.2)stop.push('frost og bleyta – hætta á hálku');
   if(tWin<=1&&rainNow>0)stop.push('úrkoma við frostmark');
-  if(gust>=15)stop.push('hviður '+Math.round(gust)+' m/s');
+  if(gust>=20)stop.push('hviður '+Math.round(gust)+' m/s');
   if(frost<=0)warn.push('frost í nótt – getur verið hált');
   else if(frost<=2)warn.push('nálægt frosti í nótt');
-  if(gust>=10&&gust<15)warn.push('hviður '+Math.round(gust)+' m/s');
+  if(gust>=13&&gust<20)warn.push('hviður '+Math.round(gust)+' m/s');
   return {lvl:stop.length?'stop':warn.length?'warn':'go',why:(stop.length?stop:warn).join(' · '),airMin,ground};
 }
 function renderBike(){
