@@ -93,6 +93,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button.nm.click{border:1px solid var(--c);border-radius:4px;padding:4px 8px}
 aside{display:grid;gap:16px}
 .card{padding:14px 16px}
+.hjol .st{display:flex;align-items:center;gap:12px;border-radius:8px;padding:10px 12px;background:color-mix(in srgb,var(--h) 14%,transparent);border-left:6px solid var(--h)}
+.hjol .st b{display:block;font:700 26px/1.05 var(--fc);letter-spacing:.02em;color:var(--h)}
+.hjol .st span{font-size:13px;line-height:1.3}
+.hjol small{display:block;margin-top:8px;font-size:12px;color:var(--mute);line-height:1.3}
 .card h3{font:700 19px/1 var(--fc);text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
 .card h3 small{font:500 12px var(--f);letter-spacing:0;text-transform:none}
 .nx{display:grid;grid-template-columns:6px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line2);width:100%;text-align:left}
@@ -183,6 +187,7 @@ button.nx:hover .t{text-decoration:underline}
       <div id="lanes"></div>
     </section>
     <aside>
+      <div class="panel card hjol" id="hjol"></div>
       <div class="panel card tide" id="tide"></div>
       <div class="panel card" id="traffic"></div>
     </aside>
@@ -590,6 +595,46 @@ function icon(k,sz){
   return `<svg width="${sz}" height="${sz}" viewBox="0 0 40 40" aria-hidden="true">${g}</svg>`;
 }
 function fetchJ(url,ms=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).finally(()=>clearTimeout(t))}
+/* ── HJÓL OG HOPP ─ mat út frá veðurspá, ekki mæling á götunum ──
+   Næturfrost: lægsti lofthiti og hiti við jörð kl. 20–09.
+   Bleyta og snjór frá hádegi daginn áður: blautar götur geta frosið um nóttina.
+   Sótt sér (past_days) svo W.daily[0] sé áfram dagurinn í dag. */
+let BH=null;
+const BIKE_T={go:'var(--family)',warn:'var(--maja)',stop:'var(--elly)'};
+const deg=n=>(n<0?'−':'')+Math.abs(Math.round(n))+'°';
+async function loadBike(){
+  try{const d=await fetchJ('https://api.open-meteo.com/v1/forecast?latitude=64.1466&longitude=-21.9426&hourly=temperature_2m,soil_temperature_0cm,precipitation,snowfall,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&past_days=1&forecast_days=3');BH=d.hourly||null}
+  catch(e){BH=null}
+  renderBike();
+}
+function bikeDay(ds){
+  const h=BH;if(!h||!h.time)return null;
+  const prev=addDays(ds,-1),a=h.time.indexOf(prev+'T12:00'),n=h.time.indexOf(prev+'T20:00'),i7=h.time.indexOf(ds+'T07:00'),i9=h.time.indexOf(ds+'T09:00');
+  if(a<0||n<0||i7<0||i9<0)return null;
+  const part=(k,x,y)=>(h[k]||[]).slice(x,y+1).filter(v=>v!=null);
+  const sum=l=>l.reduce((q,v)=>q+v,0);
+  const air=part('temperature_2m',n,i9);if(!air.length)return null;
+  const airMin=Math.min(...air),soil=part('soil_temperature_0cm',n,i9),ground=soil.length?Math.min(...soil):airMin;
+  const frost=Math.min(airMin,ground),wet=sum(part('precipitation',a,i9)),snow=sum(part('snowfall',a,i9));
+  const rainNow=sum(part('precipitation',i7,i9)),tWin=Math.min(...part('temperature_2m',i7,i9)),gust=Math.max(0,...part('wind_gusts_10m',i7,i9));
+  const stop=[],warn=[];
+  if(snow>0&&frost<=2)stop.push('snjór');
+  if(frost<=0&&wet>=0.2)stop.push('frost og bleyta – hætta á hálku');
+  if(tWin<=1&&rainNow>0)stop.push('úrkoma við frostmark');
+  if(gust>=15)stop.push('hviður '+Math.round(gust)+' m/s');
+  if(frost<=0)warn.push('frost í nótt – getur verið hált');
+  else if(frost<=2)warn.push('nálægt frosti í nótt');
+  if(gust>=10&&gust<15)warn.push('hviður '+Math.round(gust)+' m/s');
+  return {lvl:stop.length?'stop':warn.length?'warn':'go',why:(stop.length?stop:warn).join(' · '),airMin,ground};
+}
+function renderBike(){
+  const el=$('hjol');if(!el)return;
+  const now=new Date(),t=todayKey(),next=now.getHours()>=10,ds=next?addDays(t,1):t,b=bikeDay(ds);
+  const head=`<h3>Hjól og Hopp <small>${next?'Á morgun':'Í dag'} · kl. 7–9</small></h3>`;
+  if(!b){el.innerHTML=head+'<small>Spá ekki tiltæk. Kíkið út eða á Umferðina.</small>';return}
+  const label={go:'Í lagi að hjóla',warn:'Varúð – skoða göturnar',stop:'Taka strætó'}[b.lvl];
+  el.innerHTML=head+`<div class="st" style="--h:${BIKE_T[b.lvl]}"><div><b>${label}</b><span>${esc(b.why||'Ekkert frost í spánni')}</span></div></div><small>Lægst í nótt: ${deg(b.airMin)} í lofti, ${deg(b.ground)} við jörð. Mat út frá spá – ef það er hált úti, takið strætó.</small>`;
+}
 async function loadWeather(){
   try{
     W=await fetchJ('https://api.open-meteo.com/v1/forecast?latitude=64.1466&longitude=-21.9426&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&forecast_days=4');
@@ -721,19 +766,19 @@ function tick(){
   $('clock').textContent=hm(n);
   $('dow').textContent=DOW[n.getDay()];$('dn').textContent=n.getDate()+'. '+MON[n.getMonth()]+' '+n.getFullYear();
 }
-function renderAll(){renderDay();renderNext();renderTide();if($('ov').classList.contains('open'))renderMonth()}
+function renderAll(){renderDay();renderNext();renderTide();renderBike();if($('ov').classList.contains('open'))renderMonth()}
 tick();setInterval(tick,1000);
 let lastDay=todayKey();
 setInterval(()=>{
   const t=todayKey();
   if(t!==lastDay){if(state.date===lastDay)state.date=t;lastDay=t;refreshCal()}
-  renderDay();renderNext();renderSky();
+  renderDay();renderNext();renderSky();renderBike();
 },60*1000);
 setInterval(()=>{if(FEED||(G.token&&G.loaded))refreshCal()},5*60*1000);
-setInterval(loadWeather,30*60*1000);
+setInterval(()=>{loadWeather();loadBike()},30*60*1000);
 
 (function boot(){
-  setStatus('off');renderAll();loadWeather();loadTides();
+  setStatus('off');renderAll();loadWeather();loadBike();loadTides();
   const h=new URLSearchParams(location.hash.replace(/^#/,''));
   const clean=()=>{try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}};
   const fd=h.get('feed')||storedFeed();
