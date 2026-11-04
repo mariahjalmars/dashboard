@@ -93,6 +93,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button.nm.click{border:1px solid var(--c);border-radius:4px;padding:4px 8px}
 aside{display:grid;gap:16px}
 .card{padding:14px 16px}
+.hjol .st{display:flex;align-items:center;gap:12px;border-radius:8px;padding:10px 12px;background:color-mix(in srgb,var(--h) 14%,transparent);border-left:6px solid var(--h)}
+.hjol .st b{display:block;font:700 26px/1.05 var(--fc);letter-spacing:.02em;color:var(--h)}
+.hjol .st span{font-size:13px;line-height:1.3}
+.hjol small{display:block;margin-top:8px;font-size:12px;color:var(--mute);line-height:1.3}
 .card h3{font:700 19px/1 var(--fc);text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
 .card h3 small{font:500 12px var(--f);letter-spacing:0;text-transform:none}
 .nx{display:grid;grid-template-columns:6px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line2);width:100%;text-align:left}
@@ -183,6 +187,7 @@ button.nx:hover .t{text-decoration:underline}
       <div id="lanes"></div>
     </section>
     <aside>
+      <div class="panel card hjol" id="hjol"></div>
       <div class="panel card tide" id="tide"></div>
       <div class="panel card" id="traffic"></div>
     </aside>
@@ -251,24 +256,24 @@ const ALERTS=[
 ];
 const alertFor=ds=>ALERTS.find(a=>ds>=a.from&&ds<=(a.to||a.from));
 
-/* ── STUNDASKRÁR (InfoMentor, 24.–28.8.2026; Hjálmar: spænska á fimmtudögum) ── */
+/* ── STUNDASKRÁR (InfoMentor, vikan 2.–8.11.2026) ── */
 const L=(a,b,t)=>[a,b,t];
 const TT={
  elly:{
   1:[L('08:50','09:10','LesUm'),L('09:10','10:10','Danska'),L('10:30','11:30','Enska'),L('11:30','12:30','Stærðfræði'),L('12:30','13:00','Matur'),L('13:00','14:00','Íslenska')],
-  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íslenska'),L('10:30','11:30','Stærðfræði'),L('11:30','12:00','Matur'),L('12:00','13:00','Náttúrufræði'),L('13:00','14:00','Íþróttir'),L('14:00','15:00','Stuðningur í stærðfræði')],
+  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íslenska'),L('10:30','11:30','Stærðfræði'),L('11:30','12:00','Matur'),L('12:00','13:00','Náttúrufræði'),L('13:00','14:00','Íþróttir')],
   3:[L('08:50','09:10','LesUm'),L('09:10','10:10','Danska'),L('10:30','11:30','Umsjón'),L('11:30','12:30','Samfélagsfræði'),L('12:30','13:00','Matur'),L('13:00','14:00','Enska')],
-  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Hringekja'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Náttúrufræði'),L('12:00','12:30','Matur'),L('12:30','13:00','Náttúrufræði'),L('13:00','14:00','Stærðfræði'),L('14:00','15:00','Sálfræði')],
+  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Hringekja'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Náttúrufræði'),L('12:00','12:30','Matur'),L('12:30','13:00','Náttúrufræði'),L('13:00','14:00','Stærðfræði')],
   5:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íslenska'),L('10:30','11:30','Íþróttir'),L('11:30','12:00','Matur'),L('12:00','13:00','Samfélagsfræði'),L('13:00','14:00','Stærðfræði')]},
  hjalmar:{
-  1:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:30','Enska'),L('12:30','13:00','Matur'),L('13:00','14:00','Samfélagsfræði'),L('14:00','15:00','Stuðningur í íslensku')],
-  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Matur'),L('12:00','13:00','Íþróttir'),L('13:00','14:00','Samfélagsfræði')],
+  1:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:30','Enska'),L('12:30','13:00','Matur'),L('13:00','14:00','Samfélagsfræði')],
+  2:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Íslenska'),L('11:30','12:00','Matur'),L('12:00','13:00','Íþróttir'),L('13:00','14:00','Samfélagsfræði'),L('14:00','15:00','Spænska')],
   3:[L('08:50','09:10','LesUm'),L('09:10','10:10','Stærðfræði'),L('10:30','11:30','Umsjón'),L('11:30','12:30','Náttúrufræði'),L('12:30','13:00','Matur'),L('13:00','14:00','Danska')],
-  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Náttúrufræði'),L('10:30','11:30','Hringekja'),L('11:30','12:00','Íslenska'),L('12:00','12:30','Matur'),L('12:30','13:00','Íslenska'),L('13:00','14:00','Enska'),L('14:00','15:00','Spænska')],
+  4:[L('08:50','09:10','LesUm'),L('09:10','10:10','Náttúrufræði'),L('10:30','11:30','Hringekja'),L('11:30','12:00','Íslenska'),L('12:00','12:30','Matur'),L('12:30','13:00','Íslenska'),L('13:00','14:00','Enska')],
   5:[L('08:50','09:10','LesUm'),L('09:10','10:10','Íþróttir'),L('10:30','11:30','Danska'),L('11:30','12:00','Stærðfræði'),L('12:00','12:30','Matur'),L('12:30','13:00','Stærðfræði'),L('13:00','14:00','Íslenska')]}
 };
 const ONEOFF={
- elly:[{date:'2026-11-09',allDay:true,title:'Skrekkur'}],
+ elly:[{date:'2026-11-04',start:'14:00',end:'17:00',title:'Söngleikur, leikhópur'},{date:'2026-11-09',allDay:true,title:'Skrekkur'}],
  hjalmar:[]
 };
 function schoolDay(who,ds){
@@ -495,7 +500,7 @@ function renderDay(){
   $('today').classList.toggle('on',isToday);
   const mob=isMobile()&&!state.focus;
   const whos=state.focus?[state.focus]:mob?[state.tab]:['maja','elly','hjalmar'];
-  const detail=!!state.focus;
+  const detail=true;
   const data={};whos.forEach(w=>data[w]=laneData(w,ds,detail));
   let lo=8*60,hi=18*60;
   whos.forEach(w=>data[w].ev.forEach(e=>{lo=Math.min(lo,Math.floor(e.s/60)*60);hi=Math.max(hi,Math.ceil(e.e/60)*60)}));
@@ -506,7 +511,7 @@ function renderDay(){
   if(trimmed){lo=Math.floor((nowM-120)/60)*60;hi=Math.max(hi,Math.min(1440,lo+6*60));if(lo+360>1440)lo=1440-360}
   $('fullbtn').style.display=isToday&&(trimmed||state.full)&&nowM>=12*60?'':'none';
   $('fullbtn').textContent=trimmed?'Allur dagurinn':'Frá kl. '+p2(Math.floor((nowM-120)/60))+':00';
-  const rows=(hi-lo)/60,hp=state.focus?64:46;
+  const rows=(hi-lo)/60,hp=state.focus?64:(mob?60:56);
   const cols=(state.focus||mob)?'48px 1fr':'48px 1.35fr 1fr 1fr';
   let axis='';for(let m=lo;m<hi;m+=60)axis+=`<i style="top:${(m-lo)/60*hp}px">${p2(m/60)}</i>`;
   let html=`<div class="cols" style="grid-template-columns:${cols};--hp:${hp}px;--rows:${rows}"><div style="grid-column:1;grid-row:1"></div><div class="axis" style="grid-column:1;grid-row:2;height:${rows*hp}px">${axis}</div>`;
@@ -556,9 +561,9 @@ $('today').onclick=()=>setDate(todayKey());
 function nextUp(who){
   const now=new Date(),t0=dkey(now),nm=now.getHours()*60+now.getMinutes();
   for(let i=0;i<8;i++){
-    const ds=addDays(t0,i),{ev,chips}=laneData(who,ds,false);
+    const ds=addDays(t0,i),{ev,chips}=laneData(who,ds,who!=='maja');
     const c=ev.filter(e=>!e.cancelled&&(i>0||e.e>nm)).sort((a,b)=>a.s-b.s);
-    const act=c.find(e=>e.kind==='event')||c[0];
+    const act=c.find(e=>e.kind!=='meal')||c[0];
     if(!act)continue;
     const d=parseD(ds);
     const when=i===0?'Í dag':i===1?'Á morgun':DOW[d.getDay()];
@@ -590,6 +595,46 @@ function icon(k,sz){
   return `<svg width="${sz}" height="${sz}" viewBox="0 0 40 40" aria-hidden="true">${g}</svg>`;
 }
 function fetchJ(url,ms=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).finally(()=>clearTimeout(t))}
+/* ── HJÓL OG HOPP ─ mat út frá veðurspá, ekki mæling á götunum ──
+   Næturfrost: lægsti lofthiti og hiti við jörð kl. 20–09.
+   Bleyta og snjór frá hádegi daginn áður: blautar götur geta frosið um nóttina.
+   Sótt sér (past_days) svo W.daily[0] sé áfram dagurinn í dag. */
+let BH=null;
+const BIKE_T={go:'var(--family)',warn:'var(--maja)',stop:'var(--elly)'};
+const deg=n=>(n<0?'−':'')+Math.abs(Math.round(n))+'°';
+async function loadBike(){
+  try{const d=await fetchJ('https://api.open-meteo.com/v1/forecast?latitude=64.1466&longitude=-21.9426&hourly=temperature_2m,soil_temperature_0cm,precipitation,snowfall,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&past_days=1&forecast_days=3');BH=d.hourly||null}
+  catch(e){BH=null}
+  renderBike();
+}
+function bikeDay(ds){
+  const h=BH;if(!h||!h.time)return null;
+  const prev=addDays(ds,-1),a=h.time.indexOf(prev+'T12:00'),n=h.time.indexOf(prev+'T20:00'),i7=h.time.indexOf(ds+'T07:00'),i9=h.time.indexOf(ds+'T09:00');
+  if(a<0||n<0||i7<0||i9<0)return null;
+  const part=(k,x,y)=>(h[k]||[]).slice(x,y+1).filter(v=>v!=null);
+  const sum=l=>l.reduce((q,v)=>q+v,0);
+  const air=part('temperature_2m',n,i9);if(!air.length)return null;
+  const airMin=Math.min(...air),soil=part('soil_temperature_0cm',n,i9),ground=soil.length?Math.min(...soil):airMin;
+  const frost=Math.min(airMin,ground),wet=sum(part('precipitation',a,i9)),snow=sum(part('snowfall',a,i9));
+  const rainNow=sum(part('precipitation',i7,i9)),tWin=Math.min(...part('temperature_2m',i7,i9)),gust=Math.max(0,...part('wind_gusts_10m',i7,i9));
+  const stop=[],warn=[];
+  if(snow>0&&frost<=2)stop.push('snjór');
+  if(frost<=0&&wet>=0.2)stop.push('frost og bleyta – hætta á hálku');
+  if(tWin<=1&&rainNow>0)stop.push('úrkoma við frostmark');
+  if(gust>=20)stop.push('hviður '+Math.round(gust)+' m/s');
+  if(frost<=0)warn.push('frost í nótt – getur verið hált');
+  else if(frost<=2)warn.push('nálægt frosti í nótt');
+  if(gust>=13&&gust<20)warn.push('hviður '+Math.round(gust)+' m/s');
+  return {lvl:stop.length?'stop':warn.length?'warn':'go',why:(stop.length?stop:warn).join(' · '),airMin,ground};
+}
+function renderBike(){
+  const el=$('hjol');if(!el)return;
+  const now=new Date(),t=todayKey(),next=now.getHours()>=10,ds=next?addDays(t,1):t,b=bikeDay(ds);
+  const head=`<h3>Hjól og Hopp <small>${next?'Á morgun':'Í dag'} · kl. 7–9</small></h3>`;
+  if(!b){el.innerHTML=head+'<small>Spá ekki tiltæk. Kíkið út eða á Umferðina.</small>';return}
+  const label={go:'Í lagi að hjóla',warn:'Varúð – skoða göturnar',stop:'Taka strætó'}[b.lvl];
+  el.innerHTML=head+`<div class="st" style="--h:${BIKE_T[b.lvl]}"><div><b>${label}</b><span>${esc(b.why||'Ekkert frost í spánni')}</span></div></div><small>Lægst í nótt: ${deg(b.airMin)} í lofti, ${deg(b.ground)} við jörð. Mat út frá spá – ef það er hált úti, takið strætó.</small>`;
+}
 async function loadWeather(){
   try{
     W=await fetchJ('https://api.open-meteo.com/v1/forecast?latitude=64.1466&longitude=-21.9426&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&forecast_days=4');
@@ -721,19 +766,19 @@ function tick(){
   $('clock').textContent=hm(n);
   $('dow').textContent=DOW[n.getDay()];$('dn').textContent=n.getDate()+'. '+MON[n.getMonth()]+' '+n.getFullYear();
 }
-function renderAll(){renderDay();renderNext();renderTide();if($('ov').classList.contains('open'))renderMonth()}
+function renderAll(){renderDay();renderNext();renderTide();renderBike();if($('ov').classList.contains('open'))renderMonth()}
 tick();setInterval(tick,1000);
 let lastDay=todayKey();
 setInterval(()=>{
   const t=todayKey();
   if(t!==lastDay){if(state.date===lastDay)state.date=t;lastDay=t;refreshCal()}
-  renderDay();renderNext();renderSky();
+  renderDay();renderNext();renderSky();renderBike();
 },60*1000);
 setInterval(()=>{if(FEED||(G.token&&G.loaded))refreshCal()},5*60*1000);
-setInterval(loadWeather,30*60*1000);
+setInterval(()=>{loadWeather();loadBike()},30*60*1000);
 
 (function boot(){
-  setStatus('off');renderAll();loadWeather();loadTides();
+  setStatus('off');renderAll();loadWeather();loadBike();loadTides();
   const h=new URLSearchParams(location.hash.replace(/^#/,''));
   const clean=()=>{try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}};
   const fd=h.get('feed')||storedFeed();
