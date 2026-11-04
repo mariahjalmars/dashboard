@@ -409,7 +409,7 @@ async function initGoogle(){
 }
 /* ── APPS SCRIPT-VEITA: iPad á vegg þarf enga Google-innskráningu ──
    Slóðin (með lykli) er aldrei í kóðanum. Hún kemur með #feed=… í vefslóðinni. */
-const FEED_CAL={personal:'maja',imark:'maja',imark2:'maja',family:'family',elly:'elly',hjalmar:'hjalmar',mentor:'hjalmar',abler:'abler'};
+const FEED_CAL={personal:'maja',imark:'maja',imark2:'maja',family:'family',familysand:'family',elly:'elly',hjalmar:'hjalmar',mentor:'hjalmar',abler:'abler'};
 const validFeed=u=>/^https:\/\/script\.google\.com\/macros\//.test(u||'');
 function storedFeed(){try{return localStorage.getItem('fd_feed')||''}catch(e){return ''}}
 function storeFeed(u){try{localStorage.setItem('fd_feed',u)}catch(e){}}
