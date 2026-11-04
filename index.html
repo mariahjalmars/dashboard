@@ -596,14 +596,14 @@ function icon(k,sz){
 }
 function fetchJ(url,ms=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).finally(()=>clearTimeout(t))}
 /* ── HJÓL OG HOPP ─ mat út frá veðurspá, ekki mæling á götunum ──
-   Næturfrost: lægsti lofthiti og hiti við jörð kl. 20–09.
-   Bleyta og snjór frá hádegi daginn áður: blautar götur geta frosið um nóttina.
+   Aðeins frost og hálka skipta máli: 2° eða minna í nótt = ekki Hopp.
+   Lægsti lofthiti og hiti við jörð kl. 20–09. Bleyta og snjór frá hádegi daginn áður.
    Sótt sér (past_days) svo W.daily[0] sé áfram dagurinn í dag. */
 let BH=null;
-const BIKE_T={go:'var(--family)',warn:'var(--maja)',stop:'var(--elly)'};
+const BIKE_T={go:'var(--family)',stop:'var(--elly)'};
 const deg=n=>(n<0?'−':'')+Math.abs(Math.round(n))+'°';
 async function loadBike(){
-  try{const d=await fetchJ('https://api.open-meteo.com/v1/forecast?latitude=64.1466&longitude=-21.9426&hourly=temperature_2m,soil_temperature_0cm,precipitation,snowfall,wind_gusts_10m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik&past_days=1&forecast_days=3');BH=d.hourly||null}
+  try{const d=await fetchJ('https://api.open-meteo.com/v1/forecast?latitude=64.1466&longitude=-21.9426&hourly=temperature_2m,soil_temperature_0cm,precipitation,snowfall&timezone=Atlantic%2FReykjavik&past_days=1&forecast_days=3');BH=d.hourly||null}
   catch(e){BH=null}
   renderBike();
 }
@@ -616,23 +616,15 @@ function bikeDay(ds){
   const air=part('temperature_2m',n,i9);if(!air.length)return null;
   const airMin=Math.min(...air),soil=part('soil_temperature_0cm',n,i9),ground=soil.length?Math.min(...soil):airMin;
   const frost=Math.min(airMin,ground),wet=sum(part('precipitation',a,i9)),snow=sum(part('snowfall',a,i9));
-  const rainNow=sum(part('precipitation',i7,i9)),tWin=Math.min(...part('temperature_2m',i7,i9)),gust=Math.max(0,...part('wind_gusts_10m',i7,i9));
-  const stop=[],warn=[];
-  if(snow>0&&frost<=2)stop.push('snjór');
-  if(frost<=0&&wet>=0.2)stop.push('frost og bleyta – hætta á hálku');
-  if(tWin<=1&&rainNow>0)stop.push('úrkoma við frostmark');
-  if(gust>=20)stop.push('hviður '+Math.round(gust)+' m/s');
-  if(frost<=0)warn.push('frost í nótt – getur verið hált');
-  else if(frost<=2)warn.push('nálægt frosti í nótt');
-  if(gust>=13&&gust<20)warn.push('hviður '+Math.round(gust)+' m/s');
-  return {lvl:stop.length?'stop':warn.length?'warn':'go',why:(stop.length?stop:warn).join(' · '),airMin,ground};
+  const why=frost>2?'':snow>0?'snjór og hálka':frost<=0&&wet>=0.2?'frost og bleyta – hætta á hálku':frost<=0?'frost í nótt – getur verið hált':'nálægt frosti í nótt';
+  return {lvl:frost<=2?'stop':'go',why,airMin,ground};
 }
 function renderBike(){
   const el=$('hjol');if(!el)return;
   const now=new Date(),t=todayKey(),next=now.getHours()>=10,ds=next?addDays(t,1):t,b=bikeDay(ds);
   const head=`<h3>Hjól og Hopp <small>${next?'Á morgun':'Í dag'} · kl. 7–9</small></h3>`;
   if(!b){el.innerHTML=head+'<small>Spá ekki tiltæk. Kíkið út eða á Umferðina.</small>';return}
-  const label={go:'Í lagi að hjóla',warn:'Varúð – skoða göturnar',stop:'Taka strætó'}[b.lvl];
+  const label={go:'Í lagi að hjóla',stop:'Ekki Hopp – taka strætó'}[b.lvl];
   el.innerHTML=head+`<div class="st" style="--h:${BIKE_T[b.lvl]}"><div><b>${label}</b><span>${esc(b.why||'Ekkert frost í spánni')}</span></div></div><small>Lægst í nótt: ${deg(b.airMin)} í lofti, ${deg(b.ground)} við jörð. Mat út frá spá – ef það er hált úti, takið strætó.</small>`;
 }
 async function loadWeather(){
